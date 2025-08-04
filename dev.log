@@ -1,0 +1,35 @@
+
+> rss-visit-report@1.0.0 dev
+> vite
+
+build.terserOptions is specified but build.minify is not set to use Terser. Note Vite now defaults to use esbuild for minification. If you still prefer Terser, set build.minify to "terser".
+
+  VITE v4.5.14  ready in 362 ms
+
+  ➜  Local:   http://localhost:5173/
+4:01:40 PM [vite] hmr update /src/index.css, /src/pages/Dashboard/Dashboard.jsx, /src/pages/Summary/Summary.jsx, /src/pages/PCRepairs/PCRepairs.jsx, /src/pages/FollowUpItems/FollowUpItems.jsx
+4:03:30 PM [vite] hmr update /src/components/PageRouter.jsx, /src/index.css
+4:04:38 PM [vite] hmr update /src/App.jsx, /src/index.css
+4:04:58 PM [vite] hmr update /src/App.jsx, /src/index.css
+4:07:33 PM [vite] hmr update /src/pages/Dashboard/Dashboard.jsx, /src/index.css
+4:07:47 PM [vite] hmr update /src/pages/Dashboard/Dashboard.jsx, /src/index.css
+12:33:00 PM [vite] hmr update /src/components/ui/PhotoUpload.jsx, /src/index.css
+12:33:06 PM [vite] hmr update /src/components/ui/PhotoUpload.jsx, /src/index.css
+12:33:14 PM [vite] hmr update /src/components/ui/PhotoUpload.jsx, /src/index.css
+12:33:29 PM [vite] hmr update /src/components/ui/PhotoUpload.jsx, /src/index.css
+12:34:02 PM [vite] hmr update /src/components/layout/Navigation.jsx, /src/index.css
+12:34:29 PM [vite] hmr update /src/pages/Inventory/Inventory.jsx, /src/index.css
+12:34:33 PM [vite] hmr update /src/pages/Inventory/Inventory.jsx, /src/index.css
+12:34:40 PM [vite] hmr update /src/pages/Inventory/Inventory.jsx, /src/index.css
+12:34:46 PM [vite] hmr update /src/pages/Inventory/Inventory.jsx, /src/index.css
+12:34:59 PM [vite] hmr update /src/components/PageRouter.jsx, /src/index.css
+12:35:13 PM [vite] hmr update /src/components/PageRouter.jsx, /src/index.css
+7:46:52 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css
+7:47:11 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css
+7:47:26 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css
+7:47:34 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css
+7:47:41 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css
+7:47:49 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css
+7:48:02 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css
+7:48:22 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css
+7:48:30 PM [vite] hmr update /src/pages/Summary/Summary.jsx, /src/index.css

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RSS Visit Report</title>
+    
+    <!-- Security Headers (should be set by server in production) -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    
+    <!-- CSP will be set by Vite config -->
+    
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    
+    <!-- Security: Remove any external dependencies in production -->
+    <!-- TODO: Self-host all fonts and resources for security -->
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Security Warning for Development -->
+    <noscript>
+        <div style="position: fixed; top: 0; left: 0; width: 100%; background: #f56565; color: white; padding: 10px; text-align: center; z-index: 9999;">
+            This application requires JavaScript to function. Please enable JavaScript and ensure you are accessing this from a secure, internal network.
+        </div>
+    </noscript>
+</body>
+</html>

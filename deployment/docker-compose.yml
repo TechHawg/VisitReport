@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # Frontend application
+  rss-frontend:
+    build:
+      context: .
+      dockerfile: deployment/docker/Dockerfile
+    container_name: rss-visit-report-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - rss-network
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./logs:/var/log/nginx
+    depends_on:
+      - rss-backend
+    labels:
+      - "com.rss.service=frontend"
+      - "com.rss.version=1.0.0"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+
+  # Backend API (placeholder - configure based on your backend)
+  rss-backend:
+    image: node:18-alpine
+    container_name: rss-visit-report-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    networks:
+      - rss-network
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    working_dir: /app
+    command: ["npm", "start"]
+    labels:
+      - "com.rss.service=backend"
+      - "com.rss.version=1.0.0"
+    security_opt:
+      - no-new-privileges:true
+
+  # Database (PostgreSQL)
+  rss-database:
+    image: postgres:15-alpine
+    container_name: rss-visit-report-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    networks:
+      - rss-network
+    environment:
+      - POSTGRES_DB=${DB_NAME:-rss_visit_report}
+      - POSTGRES_USER=${DB_USER:-rss_user}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    labels:
+      - "com.rss.service=database"
+      - "com.rss.version=1.0.0"
+    security_opt:
+      - no-new-privileges:true
+
+  # Redis for session management and caching
+  rss-redis:
+    image: redis:7-alpine
+    container_name: rss-visit-report-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - rss-network
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    labels:
+      - "com.rss.service=redis"
+      - "com.rss.version=1.0.0"
+    security_opt:
+      - no-new-privileges:true
+
+# Networks
+networks:
+  rss-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
