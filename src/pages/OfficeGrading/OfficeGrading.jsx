@@ -19,9 +19,7 @@ const OfficeGrading = () => {
     itRelationship: { score: '', comments: '' },
     inventory: { score: '', comments: '' },
     salesFloorExperience: { score: '', comments: '' },
-    dataCloset: { score: '', comments: '' },
-    overallScore: '',
-    generalComments: ''
+    dataCloset: { score: '', comments: '' }
   };
 
   const updateGradingData = (category, field, value) => {
@@ -35,13 +33,6 @@ const OfficeGrading = () => {
     updateReportData('officeGrading', updatedGrading);
   };
 
-  const updateOverallData = (field, value) => {
-    const updatedGrading = {
-      ...gradingData,
-      [field]: value
-    };
-    updateReportData('officeGrading', updatedGrading);
-  };
 
   const calculateProgress = () => {
     const categories = ['itRelationship', 'inventory', 'salesFloorExperience', 'dataCloset'];
@@ -53,11 +44,8 @@ const OfficeGrading = () => {
       if (gradingData[category]?.comments?.trim()) filledComments++;
     });
     
-    const overallScoreFilled = gradingData.overallScore ? 1 : 0;
-    const generalCommentsFilled = gradingData.generalComments?.trim() ? 1 : 0;
-    
-    const totalFields = 10; // 4 scores + 4 comments + 1 overall score + 1 general comments
-    const filledFields = filledScores + filledComments + overallScoreFilled + generalCommentsFilled;
+    const totalFields = 8; // 4 scores + 4 comments
+    const filledFields = filledScores + filledComments;
     
     return Math.round((filledFields / totalFields) * 100);
   };
@@ -89,9 +77,7 @@ const OfficeGrading = () => {
       itRelationship: { score: '', comments: '' },
       inventory: { score: '', comments: '' },
       salesFloorExperience: { score: '', comments: '' },
-      dataCloset: { score: '', comments: '' },
-      overallScore: '',
-      generalComments: ''
+      dataCloset: { score: '', comments: '' }
     });
 
     setShowResetDialog(false);
@@ -262,58 +248,6 @@ const OfficeGrading = () => {
       </Section>
 
       {/* Overall Assessment */}
-      <Section 
-        title="Overall Assessment" 
-        icon={<BarChart3 className="text-indigo-500" />}
-        helpText="Provide an overall score and comprehensive summary of the office visit."
-      >
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <Select
-                label="Overall Office Score"
-                value={gradingData.overallScore || ''}
-                onChange={(e) => updateOverallData('overallScore', e.target.value)}
-                required
-              >
-                {scoreOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Select>
-              {gradingData.overallScore && (
-                <div className="mt-2 text-center">
-                  <span className={`text-xl font-bold ${getScoreColor(gradingData.overallScore)}`}>
-                    {getScoreLabel(gradingData.overallScore)}
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            <div className="md:col-span-2">
-              <Textarea
-                label="General Comments & Summary"
-                value={gradingData.generalComments || ''}
-                onChange={(e) => updateOverallData('generalComments', e.target.value)}
-                placeholder="Provide a comprehensive summary of the office assessment, including key strengths, areas for improvement, and overall observations..."
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <Alert variant="warning">
-            <strong>Grading Guidelines:</strong>
-            <ul className="mt-2 list-disc list-inside space-y-1 text-sm">
-              <li><strong>5 - Excellent:</strong> Exceeds expectations, best practices implemented</li>
-              <li><strong>4 - Good:</strong> Meets expectations with minor room for improvement</li>
-              <li><strong>3 - Average:</strong> Acceptable performance, some improvements needed</li>
-              <li><strong>2 - Below Average:</strong> Performance issues, requires attention</li>
-              <li><strong>1 - Poor:</strong> Significant problems, immediate action required</li>
-            </ul>
-          </Alert>
-        </div>
-      </Section>
 
       {/* Action Buttons */}
       <Section>

@@ -34,12 +34,6 @@ const Navigation = () => {
       description: 'Basic visit information and photos' 
     },
     { 
-      id: 'OfficeGrading', 
-      label: 'Office Grading', 
-      icon: <Star size={18} />, 
-      description: 'Grade office performance in key areas' 
-    },
-    { 
       id: 'Infrastructure', 
       label: 'IT Infrastructure', 
       icon: <Server size={18} />, 

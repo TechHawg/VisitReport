@@ -157,6 +157,12 @@ const Storage = () => {
     unitSpan: 1,
     status: 'active',
     notes: '',
+    // New extended fields
+    pduPorts: [],            // [{pduId: string, outlet: string}]
+    hasNicCard: false,       // boolean
+    nicSwitch: '',           // string (switch name/id)
+    nicPort: '',             // string/number
+    lastTestDate: '',        // YYYY-MM-DD
     lastUpdated: new Date().toISOString().split('T')[0]
   });
 
@@ -199,12 +205,18 @@ const Storage = () => {
       id: editingDevice.id,
       name: editingDevice.name,
       type: editingDevice.type,
-      model: editingDevice.model,
-      serialNumber: editingDevice.serialNumber,
+      model: editingDevice.type === 'patch-panel' ? '' : editingDevice.model,
+      serialNumber: editingDevice.type === 'patch-panel' ? '' : editingDevice.serialNumber,
       startUnit: parseInt(editingDevice.startUnit) || '',
       unitSpan: parseInt(editingDevice.unitSpan) || 1,
       status: editingDevice.status,
       notes: editingDevice.notes,
+      // Persist new fields
+      pduPorts: (editingDevice.pduPorts || []).map(p => ({ pduId: p.pduId || '', outlet: p.outlet || '' })),
+      hasNicCard: !!editingDevice.hasNicCard,
+      nicSwitch: editingDevice.nicSwitch || '',
+      nicPort: editingDevice.nicPort || '',
+      lastTestDate: editingDevice.lastTestDate || '',
       lastUpdated: new Date().toISOString().split('T')[0]
     };
 
@@ -256,26 +268,59 @@ const Storage = () => {
 
   // Grading functions with new 1-5 scoring system
   const updateGrading = (index, field, value) => {
-    const updatedGrading = [...(dataClosetData.grading || [])];
-    updatedGrading[index] = { ...updatedGrading[index], [field]: value };
-    updateDataClosetData('grading', updatedGrading);
-    
-    // Auto-calculate overall score
-    calculateOverallScore(updatedGrading);
+    // Use functional update to avoid stale closures and ensure immediate render
+    const normalize = (idx, fld, val, base) => {
+      const updated = [...(base || [])];
+      let newValue = val;
+      if (fld === 'score') {
+        if (newValue === '' || newValue === null || newValue === undefined) {
+          newValue = '';
+        } else {
+          const n = parseInt(newValue, 10);
+          newValue = !isNaN(n) && n >= 1 && n <= 5 ? String(n) : '';
+        }
+      }
+      updated[idx] = { ...updated[idx], [fld]: newValue };
+      return updated;
+    };
+
+    // Build next dataCloset atomically, recompute overallScore synchronously for consistent UI
+    const nextDataCloset = (() => {
+      const baseGrading = Array.isArray(dataClosetData.grading) ? dataClosetData.grading : [];
+      const nextGrading = normalize(index, field, value, baseGrading);
+      const numericScores = nextGrading
+        .map(item => parseInt(item.score, 10))
+        .filter(v => !isNaN(v) && v >= 1 && v <= 5);
+      const average = numericScores.length === 0 ? 0 : (numericScores.reduce((a,b)=>a+b,0) / numericScores.length);
+      const nextOverall = Math.round((average / 5) * 100);
+      return {
+        ...dataClosetData,
+        grading: nextGrading,
+        overallScore: nextOverall,
+        lastUpdated: new Date().toISOString().split('T')[0]
+      };
+    })();
+
+    updateReportData('dataCloset', nextDataCloset);
   };
 
   const calculateOverallScore = (gradingData) => {
-    const scores = gradingData.filter(item => item.score && !isNaN(item.score) && item.score >= 1).map(item => parseFloat(item.score));
-    if (scores.length === 0) {
-      updateDataClosetData('overallScore', 0);
-      return;
-    }
-    
-    // Convert 1-5 scale to percentage (1=20%, 2=40%, 3=60%, 4=80%, 5=100%)
-    const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    const percentage = Math.round((average / 5) * 100);
-    
-    updateDataClosetData('overallScore', percentage);
+    const numericScores = (gradingData || [])
+      .map(item => parseInt(item.score, 10))
+      .filter(v => !isNaN(v) && v >= 1 && v <= 5);
+
+    // Average selected scores; if none selected, 0%
+    const average = numericScores.length === 0
+      ? 0
+      : (numericScores.reduce((a, b) => a + b, 0) / numericScores.length);
+    const overall = Math.round((average / 5) * 100);
+
+    const updatedDataCloset = {
+      ...dataClosetData,
+      overallScore: overall,
+      lastUpdated: new Date().toISOString().split('T')[0]
+    };
+    updateReportData('dataCloset', updatedDataCloset);
   };
 
   // Email functionality
@@ -875,17 +920,16 @@ const Storage = () => {
     );
   };
 
+  // Restrict device types per requirements
   const deviceTypes = [
-    { value: 'server', label: 'Server', icon: <Server size={16} /> },
-    { value: 'switch', label: 'Network Switch', icon: <Wifi size={16} /> },
-    { value: 'router', label: 'Router', icon: <Wifi size={16} /> },
-    { value: 'storage', label: 'Storage Array', icon: <HardDrive size={16} /> },
     { value: 'ups', label: 'UPS', icon: <Zap size={16} /> },
     { value: 'pdu', label: 'PDU', icon: <Zap size={16} /> },
-    { value: 'firewall', label: 'Firewall', icon: <Shield size={16} /> },
-    { value: 'monitor', label: 'KVM/Monitor', icon: <Monitor size={16} /> },
-    { value: 'patch-panel', label: 'Patch Panel', icon: <Package size={16} /> },
-    { value: 'other', label: 'Other', icon: <Package size={16} /> }
+    { value: 'switch', label: 'Switch', icon: <Wifi size={16} /> },
+    { value: 'top-level', label: 'Top Level', icon: <Server size={16} /> },
+    { value: 'sd-wan', label: 'SD WAN', icon: <Wifi size={16} /> },
+    { value: 'camera-server', label: 'Camera Server', icon: <Server size={16} /> },
+    { value: 'test-pc', label: 'Test PC', icon: <Monitor size={16} /> },
+    { value: 'patch-panel', label: 'Patch Panel', icon: <Package size={16} /> }
   ];
 
   return (
@@ -987,27 +1031,33 @@ const Storage = () => {
           {/* Tab Content */}
           {activeTab === 'grading' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                  Data Closet Quality Assessment
-                </h3>
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Overall Score:</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    dataClosetData.overallScore >= 80 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                    dataClosetData.overallScore >= 60 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                    dataClosetData.overallScore >= 40 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                    dataClosetData.overallScore > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                  }`}>
-                    {dataClosetData.overallScore}%
-                  </span>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                    Data Closet Quality Assessment
+                  </h3>
+                </div>
+                {/* Match Summary grading header percentage block */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">Grading Score:</span>
+                    <div className="flex items-center">
+                      <span className={`text-2xl font-bold ${
+                        dataClosetData.overallScore >= 80 ? 'text-green-600' :
+                        dataClosetData.overallScore >= 60 ? 'text-blue-600' :
+                        dataClosetData.overallScore >= 40 ? 'text-yellow-600' :
+                        dataClosetData.overallScore > 0 ? 'text-red-600' : 'text-gray-400'
+                      }`}>
+                        {Number.isFinite(dataClosetData.overallScore) ? dataClosetData.overallScore : 0}%
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-4">
                 {(dataClosetData.grading || []).map((item, index) => (
-                  <div key={index} className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600 shadow-sm">
+                  <div key={`${item.category}-${index}`} className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600 shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
                       <div>
                         <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
@@ -1019,21 +1069,18 @@ const Storage = () => {
                       </div>
                       <div>
                         <Select
-                          value={item.score}
+                          value={typeof item.score === 'string' ? item.score : (item.score ? String(item.score) : '')}
                           onChange={(e) => updateGrading(index, 'score', e.target.value)}
+                          aria-label={`Set score for ${item.category}`}
+                          required
                         >
                           <option value="">Select Score</option>
-                          <option value="1">1 - Poor</option>
-                          <option value="2">2 - Fair</option>
-                          <option value="3">3 - Good</option>
-                          <option value="4">4 - Very Good</option>
                           <option value="5">5 - Excellent</option>
+                          <option value="4">4 - Very Good</option>
+                          <option value="3">3 - Good</option>
+                          <option value="2">2 - Fair</option>
+                          <option value="1">1 - Poor</option>
                         </Select>
-                        {item.score && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {Math.round((item.score / 5) * 100)}%
-                          </p>
-                        )}
                       </div>
                       <div>
                         <Input
@@ -1504,12 +1551,13 @@ const Storage = () => {
       >
         {editingDevice && (
           <div className="space-y-4">
+            {/* Basic fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
-                label="Device Name *"
+                label={editingDevice.type === 'patch-panel' ? 'Panel Name *' : 'Device Name *'}
                 value={editingDevice.name}
                 onChange={(e) => setEditingDevice({ ...editingDevice, name: e.target.value })}
-                placeholder="Server-01, Switch-Main"
+                placeholder={editingDevice.type === 'patch-panel' ? 'Patch Panel A' : 'Server-01, Switch-Main'}
               />
               <Select
                 label="Device Type"
@@ -1522,20 +1570,24 @@ const Storage = () => {
                 ))}
               </Select>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Model"
-                value={editingDevice.model}
-                onChange={(e) => setEditingDevice({ ...editingDevice, model: e.target.value })}
-                placeholder="Dell PowerEdge R730"
-              />
-              <Input
-                label="Serial Number"
-                value={editingDevice.serialNumber}
-                onChange={(e) => setEditingDevice({ ...editingDevice, serialNumber: e.target.value })}
-                placeholder="ABC123DEF456"
-              />
-            </div>
+
+            {editingDevice.type !== 'patch-panel' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label="Model"
+                  value={editingDevice.model}
+                  onChange={(e) => setEditingDevice({ ...editingDevice, model: e.target.value })}
+                  placeholder="Dell PowerEdge R730"
+                />
+                <Input
+                  label="Serial Number"
+                  value={editingDevice.serialNumber}
+                  onChange={(e) => setEditingDevice({ ...editingDevice, serialNumber: e.target.value })}
+                  placeholder="ABC123DEF456"
+                />
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 label="Start Unit (U)"
@@ -1566,6 +1618,109 @@ const Storage = () => {
                 <option value="retired">Retired</option>
               </Select>
             </div>
+
+            {/* Conditional: PDU power connections */}
+            {(['switch','top-level','sd-wan','ups','pdu','camera-server','test-pc'].includes(editingDevice.type)) && (
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">PDU Power Connections</h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const next = [...(editingDevice.pduPorts || [])];
+                      next.push({ pduId: '', outlet: '' });
+                      setEditingDevice({ ...editingDevice, pduPorts: next });
+                    }}
+                  >
+                    Add PDU Port
+                  </Button>
+                </div>
+                {(editingDevice.pduPorts || []).length === 0 && (
+                  <Alert variant="info">Add at least one PDU outlet this device is plugged into.</Alert>
+                )}
+                {(editingDevice.pduPorts || []).map((p, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                    <Select
+                      label="PDU"
+                      value={p.pduId}
+                      onChange={(e) => {
+                        const next = [...editingDevice.pduPorts];
+                        next[idx] = { ...next[idx], pduId: e.target.value };
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                    >
+                      <option value="">Select PDU</option>
+                      {/* Build PDU list across all locations/racks */}
+                      {(dataClosetData.locations || []).flatMap(loc => (loc.racks || []).flatMap(rack => rack.devices || []))
+                        .filter(d => d.type === 'pdu')
+                        .map(d => (
+                          <option key={d.id} value={String(d.id)}>{d.name || `PDU ${d.id}`}</option>
+                        ))}
+                    </Select>
+                    <Input
+                      label="Outlet/Port"
+                      value={p.outlet}
+                      onChange={(e) => {
+                        const next = [...editingDevice.pduPorts];
+                        next[idx] = { ...next[idx], outlet: e.target.value };
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                      placeholder="e.g., A5 or Left-12"
+                    />
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => {
+                        const next = [...(editingDevice.pduPorts || [])];
+                        next.splice(idx, 1);
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+                {/* Note: For switch/top-level/sd-wan allow multiple PDU ports; for others user may add one or more if needed */}
+              </div>
+            )}
+
+            {/* Conditional: NIC card section for UPS, PDU, Camera Server, Test PC */}
+            {(['ups','pdu','camera-server','test-pc'].includes(editingDevice.type)) && (
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={!!editingDevice.hasNicCard}
+                    onChange={(e) => setEditingDevice({ ...editingDevice, hasNicCard: e.target.checked })}
+                  />
+                  <span className="text-sm text-gray-900 dark:text-gray-100">NIC Card Installed</span>
+                </label>
+                {editingDevice.hasNicCard && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Input
+                      label="Switch"
+                      value={editingDevice.nicSwitch || ''}
+                      onChange={(e) => setEditingDevice({ ...editingDevice, nicSwitch: e.target.value })}
+                      placeholder="Switch name or ID"
+                    />
+                    <Input
+                      label="Port Number"
+                      value={editingDevice.nicPort || ''}
+                      onChange={(e) => setEditingDevice({ ...editingDevice, nicPort: e.target.value })}
+                      placeholder="e.g., 12"
+                    />
+                    <Input
+                      label="Last Test Date"
+                      type="date"
+                      value={editingDevice.lastTestDate || ''}
+                      onChange={(e) => setEditingDevice({ ...editingDevice, lastTestDate: e.target.value })}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             <Input
               label="Notes"
               multiline

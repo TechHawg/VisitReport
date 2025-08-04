@@ -207,9 +207,22 @@ const Photos = () => {
                             
                             {/* Photo info */}
                             <div className="p-3">
-                              <h5 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
-                                {photo.name}
-                              </h5>
+                              <div className="flex items-center justify-between gap-2">
+                                <h5 className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                                  {photo.name}
+                                </h5>
+                                <button
+                                  onClick={() => handleEditPhoto(photo)}
+                                  className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                  title="Edit name"
+                                >
+                                  <Edit size={12} />
+                                  Edit
+                                </button>
+                              </div>
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                                Use Edit to rename this photo
+                              </p>
                               {photo.description && (
                                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                                   {photo.description}

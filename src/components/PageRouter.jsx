@@ -4,7 +4,6 @@ import { useApp } from '../context/AppContext';
 // Import all pages
 import Dashboard from '../pages/Dashboard/Dashboard';
 import Summary from '../pages/Summary/Summary';
-import OfficeGrading from '../pages/OfficeGrading/OfficeGrading';
 import Infrastructure from '../pages/Infrastructure/Infrastructure';
 import IssuesActions from '../pages/IssuesActions/IssuesActions';
 import Admin from '../pages/Admin/Admin';
@@ -72,8 +71,6 @@ const PageRouter = () => {
         return <Dashboard />;
       case 'Summary':
         return <Summary />;
-      case 'OfficeGrading':
-        return <OfficeGrading />;
       case 'Infrastructure':
         return <Infrastructure />;
       case 'Inventory':
