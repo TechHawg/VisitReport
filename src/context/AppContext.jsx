@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
-import { inputSanitizer, AUDIT_LEVELS, SECURITY_EVENTS } from '../utils/security';
+import { InputSanitizer, AUDIT_LEVELS, SECURITY_EVENTS } from '../utils/security';
 
 // Initial state
 const initialState = {
@@ -178,7 +178,7 @@ const appReducer = (state, action) => {
     
     case actionTypes.UPDATE_REPORT_DATA:
       const { field, value } = action.payload;
-      const sanitizedValue = typeof value === 'string' ? inputSanitizer.sanitizeString(value) : value;
+      const sanitizedValue = typeof value === 'string' ? InputSanitizer.sanitizeString(value) : value;
       
       return {
         ...state,
