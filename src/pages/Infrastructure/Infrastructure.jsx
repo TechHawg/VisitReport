@@ -248,9 +248,10 @@ const Infrastructure = () => {
           return item;
         }).filter(item => item.name);
       } else {
-        // Process as simple list or tab-separated values
+        // Process as simple list or space/tab-separated values
         newItems = lines.map((line, index) => {
-          const values = line.split(/[,\t]/).map(v => v.trim());
+          // Split by multiple spaces (2 or more) or tabs to handle SCCM format
+          const values = line.split(/\s{2,}|\t/).map(v => v.trim());
           const item = { 
             id: Date.now() + index, 
             lastUpdated: new Date().toISOString().split('T')[0],
@@ -258,17 +259,63 @@ const Infrastructure = () => {
             sccmStatus: 'active'
           };
           
-          // Map values to fields based on position
-          if (values.length >= 1) item.name = values[0];
-          if (values.length >= 2) item.model = values[1];
-          if (values.length >= 3) item.serialNumber = values[2];
-          if (values.length >= 4) item.os = values[3];
-          if (values.length >= 5) item.processor = values[4];
-          if (values.length >= 6) item.memory = values[5];
-          if (values.length >= 7) item.storage = values[6];
-          if (values.length >= 8) item.domain = values[7];
-          if (values.length >= 9) item.sccmStatus = values[8];
-          if (values.length >= 10) item.lastSeen = values[9];
+          // Map values to fields based on SCCM data format:
+          // PC Name, RAM, Disk Drive, Computer Model, Last Login User, Last Logon Time, OS, OS Version
+          if (values.length >= 1) {
+            item.name = values[0].trim();                                    // PC Name
+          }
+          if (values.length >= 2) {
+            // RAM (in KB, convert to GB for readability)
+            const ramKB = parseInt(values[1]);
+            if (!isNaN(ramKB)) {
+              const ramGB = Math.round(ramKB / 1024 / 1024);
+              item.memory = `${ramGB}GB`;
+            } else {
+              item.memory = values[1];
+            }
+          }
+          if (values.length >= 3) item.storage = values[2].trim();         // Disk Drive
+          if (values.length >= 4) item.model = values[3].trim();          // Computer Model
+          if (values.length >= 5) {
+            // Last Login User - use as domain info
+            const loginUser = values[4].trim();
+            if (loginUser && loginUser !== '') {
+              item.domain = loginUser;
+              // Set SCCM status to active if there's a recent login user
+              item.sccmStatus = 'active';
+            }
+          }
+          if (values.length >= 6) {
+            // Last Logon Time
+            const logonTime = values[5].trim();
+            if (logonTime && logonTime !== '') {
+              item.lastSeen = logonTime;
+              
+              // Try to parse date and determine if recent (within 30 days = active)
+              try {
+                const logonDate = new Date(logonTime);
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                
+                if (logonDate >= thirtyDaysAgo) {
+                  item.sccmStatus = 'active';
+                } else {
+                  item.sccmStatus = 'offline';
+                }
+              } catch (e) {
+                // If date parsing fails, keep as active if we have login info
+                item.sccmStatus = 'active';
+              }
+            }
+          }
+          if (values.length >= 7) item.os = values[6].trim();             // OS
+          if (values.length >= 8) {
+            // OS Version - append to OS field
+            const osVersion = values[7].trim();
+            if (osVersion && osVersion !== '') {
+              item.os = item.os ? `${item.os} (${osVersion})` : osVersion;
+            }
+          }
           
           return item;
         }).filter(item => item.name && item.name.trim() !== '');
@@ -711,17 +758,20 @@ const Infrastructure = () => {
       >
         <div className="space-y-4">
           <Alert variant="info">
-            <strong>Paste Data Formats Supported:</strong>
+            <strong>SCCM Data Format Expected:</strong>
             <br />
-            • <strong>SCCM Report:</strong> Copy directly from SCCM console reports
+            <strong>Columns:</strong> PC Name, RAM (KB), Disk Drive, Computer Model, Last Login User, Last Logon Time, OS, OS Version
+            <br />
+            <br />
+            <strong>Supported Formats:</strong>
+            <br />
+            • <strong>SCCM Report:</strong> Copy directly from SCCM console reports with above columns
             <br />
             • <strong>Excel/Sheets:</strong> Copy and paste from spreadsheet applications
             <br />
-            • <strong>With Headers:</strong> First line contains field names (name, model, serialNumber, os, processor, memory, storage, domain, sccmStatus, lastSeen)
+            • <strong>Tab/Space Separated:</strong> Values separated by tabs or multiple spaces
             <br />
-            • <strong>Simple List:</strong> Just computer names (one per line)
-            <br />
-            • <strong>Tab/Comma Separated:</strong> Computer name, model, serial, OS, then additional fields
+            • <strong>Auto-Processing:</strong> RAM converted from KB to GB, status determined from last logon time
           </Alert>
           
           <div>
@@ -734,17 +784,16 @@ const Infrastructure = () => {
               className="w-full h-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 font-mono text-sm"
               placeholder={`Paste your SCCM PC data here...
 
-Examples:
-• Simple list:
-  PC-001
-  PC-002  
-  LAPTOP-001
+Expected format (tab or space separated):
+PC Name    RAM(KB)     Disk Drive                    Computer Model    Last Login User    Last Logon Time         OS                           OS Version
 
-• With details:
-  PC-001	Dell OptiPlex	ABC123	Windows 11	Intel i7	16GB	512GB SSD	DOMAIN	active	2024-01-15
-  PC-002	HP EliteDesk	DEF456	Windows 10	AMD Ryzen	8GB	256GB SSD	DOMAIN	offline	2024-01-10
-  
-• Copy directly from SCCM reports or Excel/Google Sheets`}
+Example:
+AKRON-D1NCSNK3    16491588    PM991a NVMe Samsung 256GB    OptiPlex 5090    Steffany.Papp    8/2/2025 7:06:00 PM    Microsoft Windows 11 Enterprise    10.0.26100
+AKRON-D2TGT1N3    16484120    CL4-3D256-Q11 NVMe SSSTC 256GB    OptiPlex 3090    Krystyn.Francis    8/1/2025 3:46:00 PM    Microsoft Windows 11 Enterprise    10.0.26100
+
+• Copy directly from SCCM reports or Excel/Google Sheets
+• RAM will be automatically converted from KB to GB
+• SCCM status will be determined from last logon time (30 days)`}
             />
           </div>
           
