@@ -209,7 +209,14 @@ const Infrastructure = () => {
   // Paste processing for bulk data entry from SCCM
   const processPasteData = () => {
     try {
+      console.log('=== SCCM PASTE DEBUG START ===');
+      console.log('Raw paste data:', pasteData);
+      console.log('Raw paste data length:', pasteData.length);
+      
       const lines = pasteData.trim().split('\n');
+      console.log('Split into lines:', lines);
+      console.log('Number of lines:', lines.length);
+      
       if (lines.length === 0) {
         throw new Error('No data to process');
       }
@@ -218,7 +225,14 @@ const Infrastructure = () => {
 
       // Check if first line looks like headers (contains field names)
       const firstLine = lines[0].toLowerCase();
-      const hasHeaders = pcFields.some(field => firstLine.includes(field.toLowerCase()));
+      console.log('First line:', firstLine);
+      console.log('Checking for headers in pcFields:', pcFields);
+      const hasHeaders = pcFields.some(field => {
+        const hasField = firstLine.includes(field.toLowerCase());
+        console.log(`Field "${field}" found in first line:`, hasField);
+        return hasField;
+      });
+      console.log('Has headers:', hasHeaders);
 
       if (hasHeaders) {
         // Process as CSV with headers
