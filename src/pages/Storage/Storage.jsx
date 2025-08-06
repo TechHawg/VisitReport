@@ -157,8 +157,9 @@ const Storage = () => {
     unitSpan: 1,
     status: 'active',
     notes: '',
+    isNotRacked: false,      // NEW: checkbox for devices not in rack
     // New extended fields
-    pduPorts: [],            // [{pduId: string, outlet: string}]
+    pduPorts: [],            // [{pduId: string, outlet: string, type: 'pdu'|'ups'}]
     hasNicCard: false,       // boolean
     nicSwitch: '',           // string (switch name/id)
     nicPort: '',             // string/number
@@ -194,6 +195,16 @@ const Storage = () => {
       return;
     }
 
+    // NEW: Validate that either startUnit is provided OR device is marked as not racked
+    if (!editingDevice.isNotRacked && !editingDevice.startUnit) {
+      addNotification({
+        type: 'error',
+        message: 'Please specify a start unit or mark the device as not racked',
+        duration: 3000
+      });
+      return;
+    }
+
     const location = (dataClosetData.locations || []).find(loc => loc.id === editingDevice.locationId);
     if (!location) return;
 
@@ -207,12 +218,17 @@ const Storage = () => {
       type: editingDevice.type,
       model: editingDevice.type === 'patch-panel' ? '' : editingDevice.model,
       serialNumber: editingDevice.type === 'patch-panel' ? '' : editingDevice.serialNumber,
-      startUnit: parseInt(editingDevice.startUnit) || '',
-      unitSpan: parseInt(editingDevice.unitSpan) || 1,
+      startUnit: editingDevice.isNotRacked ? '' : parseInt(editingDevice.startUnit) || '',
+      unitSpan: editingDevice.isNotRacked ? 1 : parseInt(editingDevice.unitSpan) || 1,
       status: editingDevice.status,
       notes: editingDevice.notes,
-      // Persist new fields
-      pduPorts: (editingDevice.pduPorts || []).map(p => ({ pduId: p.pduId || '', outlet: p.outlet || '' })),
+      isNotRacked: !!editingDevice.isNotRacked,
+      // Persist new fields with proper type handling
+      pduPorts: (editingDevice.pduPorts || []).map(p => ({ 
+        pduId: p.pduId || '', 
+        outlet: p.outlet || '',
+        type: p.type || 'pdu'
+      })),
       hasNicCard: !!editingDevice.hasNicCard,
       nicSwitch: editingDevice.nicSwitch || '',
       nicPort: editingDevice.nicPort || '',
@@ -1219,6 +1235,7 @@ const Storage = () => {
 
                       {/* Racks Grid */}
                       {(location.racks || []).length > 0 ? (
+                        <>
                         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                           {(location.racks || []).map(rack => (
                             <div key={rack.id} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
@@ -1266,6 +1283,115 @@ const Storage = () => {
                             </div>
                           ))}
                         </div>
+                        {/* Non-racked devices in this location */}
+                        {(() => {
+                          const nonRackedDevices = (location.racks || []).flatMap(rack => 
+                            (rack.devices || []).filter(device => device.isNotRacked)
+                          );
+                          return nonRackedDevices.length > 0 ? (
+                            <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+                              <h5 className="font-semibold mb-3 text-yellow-800 dark:text-yellow-200 flex items-center">
+                                <Package size={16} className="mr-2" />
+                                Non-Racked Devices ({nonRackedDevices.length})
+                              </h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {nonRackedDevices.map(device => (
+                                  <div key={device.id} className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-300 dark:border-yellow-700 text-sm">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-medium text-gray-900 dark:text-gray-100">{device.name}</span>
+                                      <div className="flex space-x-1">
+                                        <Button
+                                          size="xs"
+                                          variant="outline"
+                                          onClick={() => {
+                                            const rack = (location.racks || []).find(r => r.devices?.some(d => d.id === device.id));
+                                            if (rack) editDevice(location.id, rack.id, device);
+                                          }}
+                                        >
+                                          <Edit size={10} />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                                      <div>Type: {device.type || 'Unknown'}</div>
+                                      {device.model && <div>Model: {device.model}</div>}
+                                      <div>Status: <span className={`${device.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>{device.status}</span></div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
+
+                        {/* Outlet mapping for PDUs and UPS in this location */}
+                        {(() => {
+                          const powerDevices = (location.racks || []).flatMap(rack => 
+                            (rack.devices || []).filter(device => ['pdu', 'ups'].includes(device.type))
+                          );
+                          return powerDevices.length > 0 ? (
+                            <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                              <h5 className="font-semibold mb-3 text-blue-800 dark:text-blue-200 flex items-center">
+                                <Zap size={16} className="mr-2" />
+                                Power Device Outlet Mapping
+                              </h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {powerDevices.map(powerDevice => {
+                                  // Find all devices connected to this power device
+                                  const connectedDevices = (location.racks || []).flatMap(rack =>
+                                    (rack.devices || []).filter(device =>
+                                      (device.pduPorts || []).some(port => port.pduId === String(powerDevice.id))
+                                    ).map(device => ({
+                                      ...device,
+                                      outlets: (device.pduPorts || []).filter(port => port.pduId === String(powerDevice.id))
+                                    }))
+                                  );
+
+                                  return (
+                                    <div key={powerDevice.id} className="bg-white dark:bg-gray-800 rounded p-3 border border-blue-300 dark:border-blue-700">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                                          {powerDevice.name} ({powerDevice.type?.toUpperCase()})
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                          {connectedDevices.length} connected
+                                        </span>
+                                      </div>
+                                      {connectedDevices.length > 0 ? (
+                                        <div className="space-y-2">
+                                          {connectedDevices.map(device => 
+                                            device.outlets.map((outlet, idx) => (
+                                              <div key={`${device.id}-${idx}`} className="flex items-center justify-between text-sm p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                                                <span className="font-medium text-gray-900 dark:text-gray-100">{device.name}</span>
+                                                <div className="flex items-center space-x-2">
+                                                  <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                                                    Outlet {outlet.outlet}
+                                                  </span>
+                                                  <span className={`text-xs px-2 py-1 rounded ${
+                                                    device.status === 'active' 
+                                                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                                  }`}>
+                                                    {device.status}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            ))
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+                                          No devices connected to this {powerDevice.type}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null;
+                        })()}
+                        </>
                       ) : (
                         <div className="text-center py-8 bg-gray-50 dark:bg-gray-700/30 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
                           <Package className="mx-auto mb-3 opacity-50 text-gray-400" size={32} />
@@ -1588,6 +1714,23 @@ const Storage = () => {
               </div>
             )}
 
+            {/* Device not racked checkbox */}
+            <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={!!editingDevice.isNotRacked}
+                  onChange={(e) => setEditingDevice({ ...editingDevice, isNotRacked: e.target.checked })}
+                />
+                <span className="text-sm text-gray-900 dark:text-gray-100">Device is not racked</span>
+              </label>
+              {editingDevice.isNotRacked && (
+                <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                  This device will be tracked but not assigned to a specific rack unit.
+                </p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 label="Start Unit (U)"
@@ -1597,6 +1740,7 @@ const Storage = () => {
                 value={editingDevice.startUnit}
                 onChange={(e) => setEditingDevice({ ...editingDevice, startUnit: e.target.value })}
                 placeholder="1"
+                disabled={editingDevice.isNotRacked}
               />
               <Input
                 label="Unit Span"
@@ -1606,6 +1750,7 @@ const Storage = () => {
                 value={editingDevice.unitSpan}
                 onChange={(e) => setEditingDevice({ ...editingDevice, unitSpan: e.target.value })}
                 placeholder="1"
+                disabled={editingDevice.isNotRacked}
               />
               <Select
                 label="Status"
@@ -1619,8 +1764,149 @@ const Storage = () => {
               </Select>
             </div>
 
-            {/* Conditional: PDU power connections */}
-            {(['switch','top-level','sd-wan','ups','pdu','camera-server','test-pc'].includes(editingDevice.type)) && (
+            {/* Power connections based on device type */}
+            {/* PDU - shows "Add UPS Outlet" */}
+            {editingDevice.type === 'pdu' && (
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">UPS Power Connections</h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const next = [...(editingDevice.pduPorts || [])];
+                      next.push({ pduId: '', outlet: '', type: 'ups' });
+                      setEditingDevice({ ...editingDevice, pduPorts: next });
+                    }}
+                  >
+                    Add UPS Outlet
+                  </Button>
+                </div>
+                {(editingDevice.pduPorts || []).length === 0 && (
+                  <Alert variant="info">Add UPS outlets that power this PDU.</Alert>
+                )}
+                {(editingDevice.pduPorts || []).map((p, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                    <Select
+                      label="UPS"
+                      value={p.pduId}
+                      onChange={(e) => {
+                        const next = [...editingDevice.pduPorts];
+                        next[idx] = { ...next[idx], pduId: e.target.value, type: 'ups' };
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                    >
+                      <option value="">Select UPS</option>
+                      {(dataClosetData.locations || []).flatMap(loc => (loc.racks || []).flatMap(rack => rack.devices || []))
+                        .filter(d => d.type === 'ups')
+                        .map(d => (
+                          <option key={d.id} value={String(d.id)}>{d.name || `UPS ${d.id}`}</option>
+                        ))}
+                    </Select>
+                    <Input
+                      label="Outlet/Port"
+                      value={p.outlet}
+                      onChange={(e) => {
+                        const next = [...editingDevice.pduPorts];
+                        next[idx] = { ...next[idx], outlet: e.target.value };
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                      placeholder="e.g., A5 or Left-12"
+                    />
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => {
+                        const next = [...(editingDevice.pduPorts || [])];
+                        next.splice(idx, 1);
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Test PC - allows selection between UPS or PDU */}
+            {editingDevice.type === 'test-pc' && (
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Power Connections</h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const next = [...(editingDevice.pduPorts || [])];
+                      next.push({ pduId: '', outlet: '', type: 'pdu' });
+                      setEditingDevice({ ...editingDevice, pduPorts: next });
+                    }}
+                  >
+                    Add Power Connection
+                  </Button>
+                </div>
+                {(editingDevice.pduPorts || []).length === 0 && (
+                  <Alert variant="info">Add power connections (UPS or PDU outlets).</Alert>
+                )}
+                {(editingDevice.pduPorts || []).map((p, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <Select
+                      label="Power Type"
+                      value={p.type || 'pdu'}
+                      onChange={(e) => {
+                        const next = [...editingDevice.pduPorts];
+                        next[idx] = { ...next[idx], type: e.target.value, pduId: '' };
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                    >
+                      <option value="pdu">PDU</option>
+                      <option value="ups">UPS</option>
+                    </Select>
+                    <Select
+                      label={p.type === 'ups' ? 'UPS' : 'PDU'}
+                      value={p.pduId}
+                      onChange={(e) => {
+                        const next = [...editingDevice.pduPorts];
+                        next[idx] = { ...next[idx], pduId: e.target.value };
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                    >
+                      <option value="">Select {p.type === 'ups' ? 'UPS' : 'PDU'}</option>
+                      {(dataClosetData.locations || []).flatMap(loc => (loc.racks || []).flatMap(rack => rack.devices || []))
+                        .filter(d => d.type === (p.type || 'pdu'))
+                        .map(d => (
+                          <option key={d.id} value={String(d.id)}>{d.name || `${(p.type || 'pdu').toUpperCase()} ${d.id}`}</option>
+                        ))}
+                    </Select>
+                    <Input
+                      label="Outlet/Port"
+                      value={p.outlet}
+                      onChange={(e) => {
+                        const next = [...editingDevice.pduPorts];
+                        next[idx] = { ...next[idx], outlet: e.target.value };
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                      placeholder="e.g., A5 or Left-12"
+                    />
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => {
+                        const next = [...(editingDevice.pduPorts || [])];
+                        next.splice(idx, 1);
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Other devices - standard PDU connections (but NOT UPS) */}
+            {(['switch','top-level','sd-wan','camera-server'].includes(editingDevice.type)) && (
               <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-gray-900 dark:text-gray-100">PDU Power Connections</h4>
@@ -1629,7 +1915,7 @@ const Storage = () => {
                     variant="outline"
                     onClick={() => {
                       const next = [...(editingDevice.pduPorts || [])];
-                      next.push({ pduId: '', outlet: '' });
+                      next.push({ pduId: '', outlet: '', type: 'pdu' });
                       setEditingDevice({ ...editingDevice, pduPorts: next });
                     }}
                   >
@@ -1637,7 +1923,7 @@ const Storage = () => {
                   </Button>
                 </div>
                 {(editingDevice.pduPorts || []).length === 0 && (
-                  <Alert variant="info">Add at least one PDU outlet this device is plugged into.</Alert>
+                  <Alert variant="info">Add PDU outlets this device is plugged into.</Alert>
                 )}
                 {(editingDevice.pduPorts || []).map((p, idx) => (
                   <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
@@ -1646,12 +1932,11 @@ const Storage = () => {
                       value={p.pduId}
                       onChange={(e) => {
                         const next = [...editingDevice.pduPorts];
-                        next[idx] = { ...next[idx], pduId: e.target.value };
+                        next[idx] = { ...next[idx], pduId: e.target.value, type: 'pdu' };
                         setEditingDevice({ ...editingDevice, pduPorts: next });
                       }}
                     >
                       <option value="">Select PDU</option>
-                      {/* Build PDU list across all locations/racks */}
                       {(dataClosetData.locations || []).flatMap(loc => (loc.racks || []).flatMap(rack => rack.devices || []))
                         .filter(d => d.type === 'pdu')
                         .map(d => (
@@ -1681,7 +1966,6 @@ const Storage = () => {
                     </Button>
                   </div>
                 ))}
-                {/* Note: For switch/top-level/sd-wan allow multiple PDU ports; for others user may add one or more if needed */}
               </div>
             )}
 

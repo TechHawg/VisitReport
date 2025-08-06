@@ -1,26 +1,30 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
+import { fileURLToPath, URL } from 'node:url';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const isProduction = mode === 'production';
 
+  // Backend API origin used for proxying in dev. Normalize trailing slash.
+  const apiOrigin = (env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
+
   return {
     plugins: [react()],
     root: '.',
     publicDir: 'public',
-    
+
     // Path resolution
     resolve: {
       alias: {
-        '@': resolve(__dirname, 'src'),
-        '@components': resolve(__dirname, 'src/components'),
-        '@pages': resolve(__dirname, 'src/pages'),
-        '@utils': resolve(__dirname, 'src/utils'),
-        '@hooks': resolve(__dirname, 'src/hooks'),
-        '@context': resolve(__dirname, 'src/context'),
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+        '@components': fileURLToPath(new URL('./src/components', import.meta.url)),
+        '@pages': fileURLToPath(new URL('./src/pages', import.meta.url)),
+        '@utils': fileURLToPath(new URL('./src/utils', import.meta.url)),
+        '@hooks': fileURLToPath(new URL('./src/hooks', import.meta.url)),
+        '@context': fileURLToPath(new URL('./src/context', import.meta.url)),
       }
     },
 
@@ -30,6 +34,15 @@ export default defineConfig(({ command, mode }) => {
       host: env.VITE_HOST || 'localhost',
       https: env.VITE_HTTPS === 'true',
       open: env.VITE_OPEN === 'true',
+
+      // Proxy API to backend to avoid CORS/CSP headaches in development
+      proxy: {
+        '/api': {
+          target: apiOrigin,
+          changeOrigin: true
+        }
+      },
+
       headers: {
         // Security headers for development
         'X-Content-Type-Options': 'nosniff',
@@ -37,14 +50,14 @@ export default defineConfig(({ command, mode }) => {
         'X-XSS-Protection': '1; mode=block',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
         'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-        // CSP for development (more permissive)
+        // CSP for development (allow backend for connect-src and HMR)
         'Content-Security-Policy': [
           "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-eval needed for dev
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-eval needed for dev HMR
           "style-src 'self' 'unsafe-inline'",
           "img-src 'self' data: blob: https:",
           "font-src 'self' data:",
-          "connect-src 'self' ws: wss:", // WebSocket for HMR
+          `connect-src 'self' ${apiOrigin} ws: wss:`, // Allow backend API and websockets
           "media-src 'self'",
           "object-src 'none'",
           "frame-src 'none'",
@@ -89,9 +102,12 @@ export default defineConfig(({ command, mode }) => {
       assetsDir: 'assets',
       sourcemap: !isProduction, // Source maps only in development
       minify: isProduction ? 'terser' : false,
-      
+
       // Advanced build optimizations
       rollupOptions: {
+        input: {
+          main: resolve(__dirname, 'index.html')
+        },
         output: {
           // Manual chunk splitting for better caching
           manualChunks: {
@@ -107,12 +123,7 @@ export default defineConfig(({ command, mode }) => {
             ]
           },
           // Asset naming for better caching
-          chunkFileNames: (chunkInfo) => {
-            const facadeModuleId = chunkInfo.facadeModuleId 
-              ? chunkInfo.facadeModuleId.split('/').pop().replace('.jsx', '') 
-              : 'unknown';
-            return `assets/js/[name]-[hash].js`;
-          },
+          chunkFileNames: 'assets/js/[name]-[hash].js',
           assetFileNames: (assetInfo) => {
             const info = assetInfo.name.split('.');
             const ext = info[info.length - 1];
@@ -125,69 +136,7 @@ export default defineConfig(({ command, mode }) => {
             return `assets/[name]-[hash][extname]`;
           }
         }
-      },
-
-      // Terser options for production minification
-      terserOptions: isProduction ? {
-        compress: {
-          drop_console: true,
-          drop_debugger: true,
-          pure_funcs: ['console.log', 'console.info', 'console.debug'],
-          passes: 2
-        },
-        mangle: {
-          safari10: true
-        },
-        format: {
-          comments: false
-        }
-      } : {},
-
-      // Build target and compatibility
-      target: 'esnext',
-      
-      // Performance hints
-      chunkSizeWarningLimit: 1000,
-      
-      // Asset optimization
-      assetsInlineLimit: 4096, // 4kb inline threshold
-    },
-
-    // Environment variables
-    define: {
-      __DEV__: JSON.stringify(!isProduction),
-      __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-      __VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0')
-    },
-
-    // CSS configuration
-    css: {
-      devSourcemap: !isProduction,
-      postcss: {
-        plugins: [
-          require('tailwindcss'),
-          require('autoprefixer'),
-          ...(isProduction ? [
-            require('cssnano')({
-              preset: ['default', {
-                discardComments: { removeAll: true },
-                normalizeWhitespace: true
-              }]
-            })
-          ] : [])
-        ]
       }
-    },
-
-    // Optimization
-    optimizeDeps: {
-      include: ['react', 'react-dom', 'lucide-react'],
-      exclude: []
-    },
-
-    // Worker configuration for web workers (if needed)
-    worker: {
-      format: 'es'
     }
   };
 });

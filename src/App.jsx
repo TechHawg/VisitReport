@@ -4,6 +4,7 @@ import Header from './components/layout/Header';
 import Navigation from './components/layout/Navigation';
 import NotificationContainer from './components/ui/Notification';
 import PageRouter from './components/PageRouter';
+import AuthGuard from './components/auth/AuthGuard';
 
 // Error Boundary for debugging
 class AppErrorBoundary extends React.Component {
@@ -53,16 +54,18 @@ const App = () => {
 
 const AppContent = () => {
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 min-h-screen font-sans">
-      <Header />
-      <Navigation />
-      
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
-        <PageRouter />
-      </main>
-      
-      <NotificationContainer />
-    </div>
+    <AuthGuard requireAuth={true}>
+      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen font-sans">
+        <Header />
+        <Navigation />
+        
+        <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+          <PageRouter />
+        </main>
+        
+        <NotificationContainer />
+      </div>
+    </AuthGuard>
   );
 };
 

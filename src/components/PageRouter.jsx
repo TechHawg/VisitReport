@@ -6,7 +6,10 @@ import Dashboard from '../pages/Dashboard/Dashboard';
 import Summary from '../pages/Summary/Summary';
 import Infrastructure from '../pages/Infrastructure/Infrastructure';
 import IssuesActions from '../pages/IssuesActions/IssuesActions';
+import Recycling from '../pages/Recycling/Recycling';
+import Recommendations from '../pages/Recommendations/Recommendations';
 import Admin from '../pages/Admin/Admin';
+import Checklists from '../pages/Checklists/Checklists';
 
 // Lazy load heavy components for better performance
 const Inventory = React.lazy(() => import('../pages/Inventory/Inventory'));
@@ -33,9 +36,11 @@ class PageErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('Page error:', error, errorInfo);
+    console.error('PageRouter Error Boundary caught error:', error, errorInfo);
     console.error('Error stack:', error.stack);
     console.error('Component stack:', errorInfo.componentStack);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
   }
 
   render() {
@@ -64,11 +69,19 @@ class PageErrorBoundary extends React.Component {
 
 const PageRouter = () => {
   const { activePage } = useApp();
+  
+  console.log('PageRouter - activePage:', activePage);
 
   const renderPage = () => {
     switch (activePage) {
       case 'Dashboard':
-        return <Dashboard />;
+        console.log('Rendering Dashboard component...');
+        try {
+          return <Dashboard />;
+        } catch (error) {
+          console.error('Error rendering Dashboard:', error);
+          throw error;
+        }
       case 'Summary':
         return <Summary />;
       case 'Infrastructure':
@@ -87,6 +100,12 @@ const PageRouter = () => {
         );
       case 'IssuesActions':
         return <IssuesActions />;
+      case 'Checklists':
+        return <Checklists />;
+      case 'Recycling':
+        return <Recycling />;
+      case 'Recommendations':
+        return <Recommendations />;
       case 'ImportExport':
         return (
           <Suspense fallback={<LoadingSpinner />}>

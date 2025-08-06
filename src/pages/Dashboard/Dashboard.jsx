@@ -154,7 +154,7 @@ const Dashboard = () => {
       issues: {
         name: 'Issues',
         icon: <AlertTriangle size={16} />,
-        route: 'Issues',
+        route: 'IssuesActions',
         progress: calculateIssuesProgress()
       },
       recommendations: {
@@ -486,7 +486,7 @@ const Dashboard = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start"
-                  onClick={() => setActivePage('Issues')}
+                  onClick={() => setActivePage('IssuesActions')}
                 >
                   <AlertTriangle size={16} />
                   Track Issues

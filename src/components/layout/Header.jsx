@@ -4,6 +4,7 @@ import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
+import UserMenu from '../auth/UserMenu';
 import { useApp } from '../../context/AppContext';
 import { getEmailRecipients } from '../../utils/security';
 
@@ -131,11 +132,8 @@ const Header = () => {
 
             {/* User Info and Actions */}
             <div className="flex items-center space-x-4">
-              {/* User Info */}
-              <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                <User size={16} />
-                <span>development-user@company.com</span>
-              </div>
+              {/* User Menu */}
+              <UserMenu />
 
               {/* Theme Toggle */}
               <Button

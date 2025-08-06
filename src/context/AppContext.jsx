@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { sanitizeInput, AUDIT_LEVELS, SECURITY_EVENTS } from '../utils/security';
+import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import { inputSanitizer, AUDIT_LEVELS, SECURITY_EVENTS } from '../utils/security';
 
 // Initial state
 const initialState = {
@@ -130,13 +130,18 @@ const initialState = {
     
     // Issues and recommendations tracking
     issues: [],
-    recommendations: []
+    recommendations: [],
+    
+    // Checklists (pushed from templates)
+    checklists: []
   },
   user: {
-    email: 'development-user@company.com', // TODO: Replace with proper auth
-    role: 'admin',
-    permissions: ['read', 'write', 'submit']
+    email: '', // Will be populated from authentication
+    role: '',
+    permissions: []
   },
+  isAuthenticated: false,
+  sessionId: null,
   notifications: [],
   errors: []
 };
@@ -152,11 +157,15 @@ const actionTypes = {
   REMOVE_NOTIFICATION: 'REMOVE_NOTIFICATION',
   ADD_ERROR: 'ADD_ERROR',
   CLEAR_ERRORS: 'CLEAR_ERRORS',
-  RESET_REPORT: 'RESET_REPORT'
+  RESET_REPORT: 'RESET_REPORT',
+  SET_USER: 'SET_USER',
+  SET_AUTH_STATE: 'SET_AUTH_STATE',
+  CLEAR_DATA: 'CLEAR_DATA'
 };
 
 // Reducer
 const appReducer = (state, action) => {
+  console.log('AppContext reducer called:', action.type, action.payload, 'current activePage:', state.activePage);
   switch (action.type) {
     case actionTypes.SET_THEME:
       return { ...state, theme: action.payload };
@@ -169,7 +178,7 @@ const appReducer = (state, action) => {
     
     case actionTypes.UPDATE_REPORT_DATA:
       const { field, value } = action.payload;
-      const sanitizedValue = typeof value === 'string' ? sanitizeInput(value) : value;
+      const sanitizedValue = typeof value === 'string' ? inputSanitizer.sanitizeString(value) : value;
       
       return {
         ...state,
@@ -180,10 +189,17 @@ const appReducer = (state, action) => {
       };
     
     case actionTypes.SET_REPORT_DATA:
-      return {
+      console.log('🔧 DEBUG: SET_REPORT_DATA reducer called with:', action.payload);
+      console.log('🔧 DEBUG: SET_REPORT_DATA payload checklists:', action.payload?.checklists);
+      console.log('🔧 DEBUG: SET_REPORT_DATA payload checklists length:', action.payload?.checklists?.length);
+      console.log('🔧 DEBUG: SET_REPORT_DATA payload checklists[0]:', action.payload?.checklists?.[0]);
+      const newState = {
         ...state,
-        reportData: { ...state.reportData, ...action.payload }
+        reportData: action.payload
       };
+      console.log('🔧 DEBUG: SET_REPORT_DATA new state checklists:', newState.reportData.checklists);
+      console.log('🔧 DEBUG: SET_REPORT_DATA new state checklists length:', newState.reportData.checklists?.length);
+      return newState;
     
     case actionTypes.ADD_NOTIFICATION:
       return {
@@ -219,6 +235,31 @@ const appReducer = (state, action) => {
         reportData: initialState.reportData
       };
     
+    case actionTypes.SET_USER:
+      return {
+        ...state,
+        user: action.payload
+      };
+    
+    case actionTypes.SET_AUTH_STATE:
+      return {
+        ...state,
+        isAuthenticated: action.payload.isAuthenticated,
+        user: action.payload.user || state.user,
+        sessionId: action.payload.sessionId
+      };
+    
+    case actionTypes.CLEAR_DATA:
+      return {
+        ...state,
+        reportData: initialState.reportData,
+        user: initialState.user,
+        isAuthenticated: false,
+        sessionId: null,
+        notifications: [],
+        errors: []
+      };
+    
     default:
       return state;
   }
@@ -230,33 +271,65 @@ const AppContext = createContext();
 // Provider component
 export const AppProvider = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Load saved theme and data on mount
   useEffect(() => {
-    try {
-      // Load saved theme
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-        dispatch({ type: actionTypes.SET_THEME, payload: savedTheme });
-      }
-
-      // Load saved report data (SECURITY WARNING: localStorage is not secure)
-      const saved = localStorage.getItem('officeVisitReport');
-      if (saved) {
-        const parsedData = JSON.parse(saved);
-        dispatch({ type: actionTypes.SET_REPORT_DATA, payload: parsedData });
-      }
-    } catch (error) {
-      console.error('Error loading saved data:', error);
-      dispatch({
-        type: actionTypes.ADD_ERROR,
-        payload: {
-          message: 'Failed to load saved data',
-          level: AUDIT_LEVELS.MEDIUM,
-          event: SECURITY_EVENTS.DATA_IMPORT
+    const loadData = async () => {
+      // Set loading to true at the start
+      dispatch({ type: actionTypes.SET_LOADING, payload: true });
+      console.log('🔧 DEBUG: Starting data load, setting isLoading: true');
+      
+      try {
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+          dispatch({ type: actionTypes.SET_THEME, payload: savedTheme });
         }
-      });
-    }
+
+        // Load saved report data (SECURITY WARNING: localStorage is not secure)
+        const saved = localStorage.getItem('officeVisitReport');
+        console.log('🔧 DEBUG: Loading from localStorage:', saved);
+        if (saved) {
+          const parsedData = JSON.parse(saved);
+          console.log('🔧 DEBUG: Parsed data:', parsedData);
+          console.log('🔧 DEBUG: Loaded checklists:', parsedData.checklists);
+          // Ensure checklists array exists for backward compatibility
+          if (!parsedData.checklists) {
+            parsedData.checklists = [];
+          }
+          console.log('🔧 DEBUG: InitialState checklists:', initialState.reportData.checklists);
+          console.log('🔧 DEBUG: ParsedData checklists before merge:', parsedData.checklists);
+          
+          // Merge with initial state to ensure all properties exist
+          const fullData = { ...initialState.reportData, ...parsedData };
+          console.log('🔧 DEBUG: Full data after merge:', fullData);
+          console.log('🔧 DEBUG: Final checklists after merge:', fullData.checklists);
+          dispatch({ type: actionTypes.SET_REPORT_DATA, payload: fullData });
+        }
+        
+        // Mark initial load as complete and set loading to false
+        setIsInitialLoad(false);
+        dispatch({ type: actionTypes.SET_LOADING, payload: false });
+        console.log('🔧 DEBUG: Data load complete, setting isLoading: false');
+        
+      } catch (error) {
+        console.error('Error loading saved data:', error);
+        setIsInitialLoad(false);
+        dispatch({ type: actionTypes.SET_LOADING, payload: false });
+        console.log('🔧 DEBUG: Data load failed, setting isLoading: false');
+        dispatch({
+          type: actionTypes.ADD_ERROR,
+          payload: {
+            message: 'Failed to load saved data',
+            level: AUDIT_LEVELS.MEDIUM,
+            event: SECURITY_EVENTS.DATA_IMPORT
+          }
+        });
+      }
+    };
+    
+    loadData();
   }, []);
 
   // Apply theme class to document element when theme changes
@@ -277,9 +350,17 @@ export const AppProvider = ({ children }) => {
     }
   }, [state.theme]);
 
-  // Save data to localStorage when reportData changes
+  // Save data to localStorage when reportData changes (but not during initial load)
   useEffect(() => {
+    // Skip saving during initial load to prevent overwriting manually set localStorage data
+    if (isInitialLoad) {
+      console.log('🔧 DEBUG: Skipping save during initial load');
+      return;
+    }
+    
     try {
+      console.log('🔧 DEBUG: Saving to localStorage:', state.reportData);
+      console.log('🔧 DEBUG: Checklists being saved:', state.reportData.checklists);
       localStorage.setItem('officeVisitReport', JSON.stringify(state.reportData));
     } catch (error) {
       console.error('Error saving data:', error);
@@ -292,7 +373,7 @@ export const AppProvider = ({ children }) => {
         }
       });
     }
-  }, [state.reportData]);
+  }, [state.reportData, isInitialLoad]);
 
   // Action creators
   const actions = {
@@ -319,6 +400,13 @@ export const AppProvider = ({ children }) => {
     
     resetReport: () => dispatch({ type: actionTypes.RESET_REPORT }),
 
+    // Authentication actions
+    setUser: (user) => dispatch({ type: actionTypes.SET_USER, payload: user }),
+    
+    setAuthState: (authState) => dispatch({ type: actionTypes.SET_AUTH_STATE, payload: authState }),
+    
+    clearData: () => dispatch({ type: actionTypes.CLEAR_DATA }),
+
     // Theme toggle
     toggleTheme: () => {
       const newTheme = state.theme === 'light' ? 'dark' : 'light';
@@ -327,7 +415,11 @@ export const AppProvider = ({ children }) => {
   };
 
   const value = {
+    // Expose state properties directly
     ...state,
+    // Keep state object for backward compatibility
+    state,
+    dispatch,
     ...actions
   };
 
@@ -347,4 +439,4 @@ export const useApp = () => {
   return context;
 };
 
-export { actionTypes };
+export { AppContext, actionTypes };

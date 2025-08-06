@@ -28,6 +28,12 @@ const Navigation = () => {
       description: 'Overview and quick actions' 
     },
     { 
+      id: 'Checklists', 
+      label: 'Checklists', 
+      icon: <CheckSquare size={18} />, 
+      description: 'View and complete checklists for your visit report' 
+    },
+    { 
       id: 'Summary', 
       label: 'Visit Summary', 
       icon: <FileText size={18} />, 
