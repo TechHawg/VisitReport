@@ -250,8 +250,23 @@ const Infrastructure = () => {
       } else {
         // Process as simple list or space/tab-separated values
         newItems = lines.map((line, index) => {
+          // Debug logging
+          console.log('Processing line:', line);
+          
           // Split by multiple spaces (2 or more) or tabs to handle SCCM format
-          const values = line.split(/\s{2,}|\t/).map(v => v.trim());
+          // Also try splitting by 4+ spaces as SCCM often uses wide spacing
+          let values = line.split(/\s{4,}|\t/).map(v => v.trim());
+          
+          // If we don't get enough values, try different split patterns
+          if (values.length < 4) {
+            values = line.split(/\s{3,}|\t/).map(v => v.trim());
+          }
+          if (values.length < 4) {
+            values = line.split(/\s{2,}|\t/).map(v => v.trim());
+          }
+          
+          console.log('Split into values:', values, 'Length:', values.length);
+          
           const item = { 
             id: Date.now() + index, 
             lastUpdated: new Date().toISOString().split('T')[0],
@@ -317,10 +332,18 @@ const Infrastructure = () => {
             }
           }
           
+          console.log('Created item:', item);
           return item;
-        }).filter(item => item.name && item.name.trim() !== '');
+        }).filter(item => {
+          const isValid = item.name && item.name.trim() !== '';
+          console.log('Item valid?', isValid, 'Name:', item.name);
+          return isValid;
+        });
       }
 
+      console.log('Final newItems count:', newItems.length);
+      console.log('Final newItems:', newItems);
+      
       if (newItems.length === 0) {
         throw new Error('No valid PC data found in pasted content');
       }
