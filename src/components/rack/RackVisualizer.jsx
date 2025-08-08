@@ -30,6 +30,7 @@ const RackVisualizer = ({
   onDeviceEdit, 
   onDeviceDelete, 
   onDeviceAdd,
+  onDeviceClick,
   viewMode = 'detailed'
 }) => {
   // Local state
@@ -63,8 +64,12 @@ const RackVisualizer = ({
 
   // Event handlers
   const handleDeviceClick = (device) => {
-    setSelectedDevice(device);
-    setShowDeviceModal(true);
+    if (onDeviceClick) {
+      onDeviceClick(device);
+    } else {
+      setSelectedDevice(device);
+      setShowDeviceModal(true);
+    }
   };
 
   const handleUnitClick = (unitNumber) => {

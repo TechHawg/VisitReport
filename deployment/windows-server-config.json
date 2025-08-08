@@ -1,0 +1,438 @@
+{
+  "deployment": {
+    "name": "RSS Visit Report - Enterprise Windows Deployment",
+    "version": "1.0.0",
+    "environment": "production",
+    "platform": "windows-server",
+    "lastUpdated": "2025-01-07T00:00:00Z"
+  },
+  
+  "infrastructure": {
+    "server": {
+      "os": "Windows Server 2019/2022",
+      "minimumSpecs": {
+        "cpu": "4 cores, 2.4 GHz",
+        "memory": "8 GB RAM",
+        "storage": "100 GB SSD",
+        "network": "1 Gbps Ethernet"
+      },
+      "recommendedSpecs": {
+        "cpu": "8 cores, 3.0 GHz",
+        "memory": "16 GB RAM", 
+        "storage": "200 GB SSD with RAID 1",
+        "network": "Redundant 1 Gbps Ethernet"
+      },
+      "features": [
+        "IIS (Internet Information Services)",
+        "Windows Authentication",
+        "Active Directory Integration",
+        ".NET Framework 4.8+",
+        "PowerShell 5.1+"
+      ]
+    },
+    
+    "database": {
+      "type": "SQL Server",
+      "version": "SQL Server 2019/2022",
+      "edition": "Standard or Enterprise",
+      "authentication": "Windows Authentication preferred",
+      "features": [
+        "Full-Text Search",
+        "SQL Server Agent",
+        "Backup and Recovery",
+        "Always Encrypted (optional)"
+      ],
+      "configuration": {
+        "initialSize": "100 MB",
+        "growthSize": "10 MB",
+        "maxSize": "10 GB",
+        "recoveryModel": "FULL",
+        "collation": "SQL_Latin1_General_CP1_CI_AS"
+      }
+    },
+    
+    "webServer": {
+      "type": "IIS",
+      "version": "10.0+",
+      "features": [
+        "HTTP Redirect",
+        "Static Content Compression",
+        "Dynamic Content Compression",
+        "URL Rewrite Module",
+        "Request Filtering",
+        "Windows Authentication",
+        "Basic Authentication",
+        "SSL/TLS Support"
+      ],
+      "applicationPool": {
+        "name": "RSS-VisitReport-Pool",
+        "netFrameworkVersion": "v4.0",
+        "managedPipelineMode": "Integrated",
+        "processModel": {
+          "identityType": "ApplicationPoolIdentity",
+          "idleTimeout": "00:00:00",
+          "maxProcesses": 1
+        },
+        "recycling": {
+          "regularTimeInterval": "1.05:00:00",
+          "memoryLimit": "1048576"
+        }
+      }
+    },
+    
+    "reverseProxy": {
+      "type": "IIS with URL Rewrite",
+      "configuration": {
+        "backend": "http://localhost:3000",
+        "rules": [
+          {
+            "name": "RSS Visit Report API",
+            "pattern": "^api/(.*)",
+            "action": "http://localhost:3001/api/{R:1}"
+          },
+          {
+            "name": "RSS Visit Report SPA",
+            "pattern": ".*",
+            "action": "http://localhost:3000/{R:0}"
+          }
+        ]
+      }
+    }
+  },
+  
+  "activeDirectory": {
+    "enabled": true,
+    "domain": "company.local",
+    "ldapSettings": {
+      "server": "dc.company.local",
+      "port": 389,
+      "useSSL": false,
+      "useTLS": true,
+      "baseDN": "DC=company,DC=local",
+      "bindDN": "CN=rss-service,OU=ServiceAccounts,DC=company,DC=local",
+      "searchFilter": "(sAMAccountName={{username}})",
+      "attributes": [
+        "sAMAccountName",
+        "mail", 
+        "displayName",
+        "givenName",
+        "sn",
+        "memberOf",
+        "objectGUID"
+      ]
+    },
+    "groupMapping": {
+      "RSS-Admins": "admin",
+      "RSS-Managers": "manager", 
+      "RSS-Technicians": "technician",
+      "RSS-Users": "viewer"
+    },
+    "serviceAccount": {
+      "username": "rss-service@company.local",
+      "description": "Service account for RSS Visit Report LDAP authentication",
+      "permissions": ["Read all user information", "Read group memberships"]
+    }
+  },
+  
+  "application": {
+    "frontend": {
+      "type": "React SPA",
+      "buildTool": "Vite",
+      "outputDir": "dist",
+      "staticFiles": {
+        "path": "C:\\inetpub\\wwwroot\\rss-visit-report",
+        "permissions": "IIS_IUSRS: Read & Execute"
+      }
+    },
+    
+    "backend": {
+      "type": "Node.js API",
+      "runtime": "Node.js 18+",
+      "processManager": "PM2 for Windows",
+      "port": 3001,
+      "logPath": "C:\\RSS-VisitReport\\logs",
+      "serviceName": "RSS-VisitReport-API"
+    },
+    
+    "configuration": {
+      "environmentFile": "C:\\RSS-VisitReport\\config\\.env.production",
+      "variables": {
+        "NODE_ENV": "production",
+        "PORT": "3001",
+        "DB_TYPE": "mssql",
+        "DB_SERVER": "localhost\\SQLEXPRESS",
+        "DB_DATABASE": "RSS_Visit_Reports",
+        "DB_INTEGRATED_SECURITY": "true",
+        "AD_ENABLED": "true",
+        "AD_DOMAIN": "company.local",
+        "AD_SERVER": "dc.company.local",
+        "JWT_SECRET": "[GENERATE-SECURE-KEY]",
+        "SESSION_SECRET": "[GENERATE-SECURE-KEY]",
+        "CORS_ORIGIN": "https://rss-reports.company.local",
+        "SSL_CERT_PATH": "C:\\SSL\\company.local.crt",
+        "SSL_KEY_PATH": "C:\\SSL\\company.local.key",
+        "AUDIT_ENABLED": "true",
+        "LOG_LEVEL": "info"
+      }
+    }
+  },
+  
+  "security": {
+    "ssl": {
+      "enabled": true,
+      "certificateType": "Internal CA or Commercial",
+      "paths": {
+        "certificate": "C:\\SSL\\rss-reports.company.local.crt",
+        "privateKey": "C:\\SSL\\rss-reports.company.local.key",
+        "caCertificate": "C:\\SSL\\company-ca.crt"
+      },
+      "binding": {
+        "port": 443,
+        "ipAddress": "*",
+        "sslFlags": "Sni"
+      }
+    },
+    
+    "firewall": {
+      "inboundRules": [
+        {
+          "name": "RSS Reports HTTPS",
+          "port": 443,
+          "protocol": "TCP",
+          "action": "Allow",
+          "scope": "Domain"
+        },
+        {
+          "name": "RSS Reports HTTP Redirect", 
+          "port": 80,
+          "protocol": "TCP",
+          "action": "Allow",
+          "scope": "Domain"
+        }
+      ],
+      "outboundRules": [
+        {
+          "name": "LDAP Authentication",
+          "port": 389,
+          "protocol": "TCP", 
+          "action": "Allow",
+          "destination": "Domain Controllers"
+        },
+        {
+          "name": "SQL Server Database",
+          "port": 1433,
+          "protocol": "TCP",
+          "action": "Allow",
+          "destination": "Database Server"
+        }
+      ]
+    },
+    
+    "authentication": {
+      "methods": ["Windows Authentication", "Form-based with AD"],
+      "sessionTimeout": 1800,
+      "maxLoginAttempts": 5,
+      "lockoutDuration": 900,
+      "passwordPolicy": "Inherited from Domain"
+    },
+    
+    "headers": {
+      "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "X-XSS-Protection": "1; mode=block",
+      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'"
+    }
+  },
+  
+  "monitoring": {
+    "eventLog": {
+      "enabled": true,
+      "logName": "RSS Visit Report",
+      "sources": ["RSS-API", "RSS-Auth", "RSS-DB"],
+      "levels": ["Information", "Warning", "Error"]
+    },
+    
+    "performanceCounters": {
+      "enabled": true,
+      "counters": [
+        "Processor Time",
+        "Available Memory", 
+        "Disk Reads/sec",
+        "Network Bytes/sec"
+      ]
+    },
+    
+    "healthChecks": {
+      "enabled": true,
+      "endpoint": "/health",
+      "interval": 60,
+      "checks": [
+        "Database Connectivity",
+        "LDAP Connectivity", 
+        "File System Access",
+        "Memory Usage"
+      ]
+    },
+    
+    "alerts": {
+      "email": {
+        "enabled": true,
+        "smtp": "mail.company.local",
+        "from": "rss-alerts@company.local",
+        "recipients": ["it-team@company.local"]
+      },
+      "thresholds": {
+        "cpuUsage": 80,
+        "memoryUsage": 85,
+        "diskSpace": 90,
+        "responseTime": 5000
+      }
+    }
+  },
+  
+  "backup": {
+    "database": {
+      "schedule": "Daily at 02:00",
+      "retention": "30 days",
+      "location": "C:\\Backups\\RSS-VisitReport\\Database",
+      "compression": true,
+      "encryption": false
+    },
+    
+    "files": {
+      "schedule": "Weekly on Sunday at 03:00",
+      "retention": "12 weeks", 
+      "location": "C:\\Backups\\RSS-VisitReport\\Files",
+      "includes": [
+        "C:\\RSS-VisitReport\\config",
+        "C:\\inetpub\\wwwroot\\rss-visit-report",
+        "C:\\SSL"
+      ]
+    },
+    
+    "logs": {
+      "retention": "90 days",
+      "archiveAfter": "30 days",
+      "location": "C:\\RSS-VisitReport\\logs\\archive"
+    }
+  },
+  
+  "deployment": {
+    "scripts": {
+      "install": "deployment/windows/install.ps1",
+      "configure": "deployment/windows/configure.ps1", 
+      "start": "deployment/windows/start.ps1",
+      "stop": "deployment/windows/stop.ps1",
+      "update": "deployment/windows/update.ps1"
+    },
+    
+    "services": [
+      {
+        "name": "RSS-VisitReport-API",
+        "displayName": "RSS Visit Report API Service",
+        "description": "Backend API service for RSS Visit Report application",
+        "executablePath": "C:\\RSS-VisitReport\\api\\rss-api-service.exe",
+        "startType": "Automatic",
+        "accountType": "LocalSystem"
+      }
+    ],
+    
+    "iisConfiguration": {
+      "siteName": "RSS Visit Report",
+      "physicalPath": "C:\\inetpub\\wwwroot\\rss-visit-report",
+      "bindings": [
+        {
+          "protocol": "http",
+          "port": 80,
+          "hostname": "rss-reports.company.local"
+        },
+        {
+          "protocol": "https", 
+          "port": 443,
+          "hostname": "rss-reports.company.local",
+          "certificateHash": "[TO_BE_CONFIGURED]"
+        }
+      ],
+      "authentication": {
+        "anonymousAuthentication": false,
+        "windowsAuthentication": true,
+        "basicAuthentication": false
+      }
+    }
+  },
+  
+  "maintenance": {
+    "updates": {
+      "schedule": "Monthly during maintenance window",
+      "autoRestart": false,
+      "testingRequired": true
+    },
+    
+    "logRotation": {
+      "enabled": true,
+      "maxSize": "100 MB",
+      "maxFiles": 10,
+      "compression": true
+    },
+    
+    "cleanup": {
+      "tempFiles": {
+        "schedule": "Daily at 01:00",
+        "olderThan": "7 days"
+      },
+      "auditLogs": {
+        "schedule": "Monthly",
+        "retention": "12 months",
+        "archive": true
+      }
+    }
+  },
+  
+  "troubleshooting": {
+    "commonIssues": [
+      {
+        "issue": "Application won't start",
+        "solutions": [
+          "Check Windows Event Log",
+          "Verify SQL Server is running", 
+          "Check LDAP connectivity",
+          "Validate SSL certificates"
+        ]
+      },
+      {
+        "issue": "Authentication failures",
+        "solutions": [
+          "Test LDAP connection",
+          "Verify service account permissions",
+          "Check Active Directory connectivity",
+          "Review authentication logs"
+        ]
+      },
+      {
+        "issue": "Performance issues",
+        "solutions": [
+          "Check SQL Server performance",
+          "Review IIS logs",
+          "Monitor system resources",
+          "Analyze application logs"
+        ]
+      }
+    ],
+    
+    "diagnostics": {
+      "tools": [
+        "PowerShell diagnostic scripts",
+        "SQL Server profiler",
+        "IIS logs analysis",
+        "Performance Monitor"
+      ],
+      "logLocations": [
+        "C:\\RSS-VisitReport\\logs",
+        "Windows Event Log: RSS Visit Report",
+        "IIS Logs: C:\\inetpub\\logs\\LogFiles",
+        "SQL Server Error Log"
+      ]
+    }
+  }
+}

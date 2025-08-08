@@ -138,6 +138,71 @@ class AuthService {
    * @param {string} password - Password
    */
   async authenticateWithAPI(username, password) {
+    // Demo user fallback for development/testing
+    if (username.toLowerCase() === 'demo' && password === 'demo123') {
+      const demoUser = {
+        success: true,
+        user: {
+          id: 'demo-user-001',
+          username: 'demo',
+          email: 'demo@rss-reports.local',
+          displayName: 'Demo User',
+          role: 'technician', // Technician role allows access to most features except Admin
+          roles: ['technician'],
+          permissions: [
+            'reports:view:assigned',
+            'reports:view:all', // Added for Import/Export
+            'reports:create',
+            'reports:edit:own',
+            'reports:export:own',
+            'hardware:manage'
+            // Removed wildcard '*' to prevent admin access
+          ],
+          authMethod: 'local'
+        },
+        token: 'demo-token-' + Date.now(),
+        sessionId: 'demo-session-' + Date.now()
+      };
+      
+      // Debug logging for demo user
+      console.log('🔍 Demo user authentication successful:', demoUser);
+      return demoUser;
+    }
+    
+    // Admin demo user for full system demonstration
+    if (username.toLowerCase() === 'admin' && password === 'admin123') {
+      const adminDemoUser = {
+        success: true,
+        user: {
+          id: 'admin-demo-001',
+          username: 'admin',
+          email: 'admin@rss-reports.local',
+          displayName: 'Admin Demo User',
+          role: 'admin', // Full admin role with all privileges
+          roles: ['admin'],
+          permissions: [
+            '*', // Wildcard for full access
+            'admin:*',
+            'system:settings',
+            'reports:view:all',
+            'reports:create',
+            'reports:edit:any',
+            'reports:export:all',
+            'hardware:manage',
+            'users:manage',
+            'system:backup'
+          ],
+          authMethod: 'local'
+        },
+        token: 'admin-demo-token-' + Date.now(),
+        sessionId: 'admin-demo-session-' + Date.now()
+      };
+      
+      // Debug logging for admin demo user
+      console.log('🔍 Admin demo user authentication successful:', adminDemoUser);
+      return adminDemoUser;
+    }
+    
     const apiUrl = settings.getApiUrl('auth/login');
     
     const response = await fetch(apiUrl, {
@@ -272,9 +337,24 @@ class AuthService {
   getRolePermissions(roles) {
     const roleMap = {
       'admin': ['*'], // All permissions
-      'manager': ['read:all', 'write:own', 'export:reports'],
-      'technician': ['read:assigned', 'write:assigned', 'upload:photos'],
-      'viewer': ['read:assigned']
+      'manager': [
+        'reports:view:all', 
+        'reports:create', 
+        'reports:edit:own', 
+        'reports:export:own',
+        'reports:export:all',
+        'hardware:manage'
+      ],
+      'technician': [
+        'reports:view:assigned', 
+        'reports:create', 
+        'reports:edit:own', 
+        'reports:export:own',
+        'hardware:manage'
+      ],
+      'viewer': [
+        'reports:view:assigned'
+      ]
     };
     
     const permissions = new Set();

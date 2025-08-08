@@ -8,7 +8,7 @@ import { AppContext } from '../../context/AppContext';
 import enhancedAuthService from '../../services/enhancedAuthService.v2.js';
 
 const UserMenu = () => {
-  const { state, dispatch } = useContext(AppContext);
+  const { state, dispatch, setActivePage } = useContext(AppContext);
   const [isOpen, setIsOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -153,8 +153,8 @@ const UserMenu = () => {
                   <button
                     onClick={() => {
                       setIsOpen(false);
-                      // TODO: Open admin panel
-                      console.log('Open admin panel');
+                      // Navigate to Admin page
+                      setActivePage('Admin');
                     }}
                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   >

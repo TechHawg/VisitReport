@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Monitor, Plus, Edit, Trash2, Download, Upload, Clipboard, BarChart3, Package, Server } from 'lucide-react';
 import Section from '../../components/ui/Section';
 import Input from '../../components/ui/Input';
@@ -35,7 +35,7 @@ const Infrastructure = () => {
     updateReportData('sccmPCs', updatedData);
   };
 
-  const pcFields = ['name', 'model', 'serialNumber', 'os', 'processor', 'memory', 'storage', 'domain', 'sccmStatus', 'lastSeen', 'status'];
+  const pcFields = ['name', 'model', 'serialNumber', 'os', 'processor', 'memory', 'storage', 'lastLoginUsername', 'sccmStatus', 'lastSeen', 'status'];
 
   const getEmptyPC = () => ({
     id: Date.now(),
@@ -46,7 +46,7 @@ const Infrastructure = () => {
     processor: '',
     memory: '',
     storage: '',
-    domain: '',
+    lastLoginUsername: '',
     sccmStatus: 'active',
     lastSeen: '',
     status: 'active',
@@ -206,35 +206,46 @@ const Infrastructure = () => {
     }
   };
 
-  // Paste processing for bulk data entry from SCCM
-  const processPasteData = () => {
+  // Debounce utility to prevent excessive processing
+  const debounce = useCallback((func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }, []);
+
+  // Optimized paste processing for bulk data entry from SCCM
+  const processPasteData = useCallback(() => {
     try {
-      console.log('=== SCCM PASTE DEBUG START ===');
-      console.log('Raw paste data:', pasteData);
-      console.log('Raw paste data length:', pasteData.length);
+      // Reduced logging in development
+      if (import.meta.env.DEV) {
+        console.log('Processing SCCM paste data, lines:', pasteData.trim().split('\n').length);
+      }
       
       const lines = pasteData.trim().split('\n');
-      console.log('Split into lines:', lines);
-      console.log('Number of lines:', lines.length);
-      
       if (lines.length === 0) {
         throw new Error('No data to process');
       }
 
       let newItems = [];
-
-      // Check if first line looks like headers (contains field names)
       const firstLine = lines[0].toLowerCase();
-      console.log('First line:', firstLine);
-      console.log('Checking for headers in pcFields:', pcFields);
-      const hasHeaders = pcFields.some(field => {
-        const hasField = firstLine.includes(field.toLowerCase());
-        console.log(`Field "${field}" found in first line:`, hasField);
-        return hasField;
-      });
-      console.log('Has headers:', hasHeaders);
+      const tokens = firstLine.split(/\s+/);
+      
+      // Optimized header detection
+      const hasHeaders = tokens.some(token => 
+        pcFields.some(field => token === field.toLowerCase())
+      );
+      
+      const firstToken = tokens[0] || '';
+      const looksLikeComputerName = /^[a-z0-9-]+$/i.test(firstToken) && firstToken.length > 3;
+      const finalHasHeaders = hasHeaders && !looksLikeComputerName;
 
-      if (hasHeaders) {
+      if (finalHasHeaders) {
         // Process as CSV with headers
         const headers = lines[0].split(/[,\t]/).map(h => h.trim().replace(/"/g, ''));
         newItems = lines.slice(1).map((line, index) => {
@@ -264,8 +275,6 @@ const Infrastructure = () => {
       } else {
         // Process as simple list or space/tab-separated values
         newItems = lines.map((line, index) => {
-          // Debug logging
-          console.log('Processing line:', line);
           
           // Split by multiple spaces (2 or more) or tabs to handle SCCM format
           // Also try splitting by 4+ spaces as SCCM often uses wide spacing
@@ -279,7 +288,6 @@ const Infrastructure = () => {
             values = line.split(/\s{2,}|\t/).map(v => v.trim());
           }
           
-          console.log('Split into values:', values, 'Length:', values.length);
           
           const item = { 
             id: Date.now() + index, 
@@ -306,10 +314,10 @@ const Infrastructure = () => {
           if (values.length >= 3) item.storage = values[2].trim();         // Disk Drive
           if (values.length >= 4) item.model = values[3].trim();          // Computer Model
           if (values.length >= 5) {
-            // Last Login User - use as domain info
+            // Last Login User
             const loginUser = values[4].trim();
             if (loginUser && loginUser !== '') {
-              item.domain = loginUser;
+              item.lastLoginUsername = loginUser;
               // Set SCCM status to active if there's a recent login user
               item.sccmStatus = 'active';
             }
@@ -346,17 +354,10 @@ const Infrastructure = () => {
             }
           }
           
-          console.log('Created item:', item);
           return item;
-        }).filter(item => {
-          const isValid = item.name && item.name.trim() !== '';
-          console.log('Item valid?', isValid, 'Name:', item.name);
-          return isValid;
-        });
+        }).filter(item => item.name && item.name.trim() !== '');
       }
 
-      console.log('Final newItems count:', newItems.length);
-      console.log('Final newItems:', newItems);
       
       if (newItems.length === 0) {
         throw new Error('No valid PC data found in pasted content');
@@ -381,7 +382,7 @@ const Infrastructure = () => {
         duration: 5000
       });
     }
-  };
+  }, [pasteData, pcFields, sccmData, updateReportData, setShowPasteModal, setPasteData, addNotification]);
 
   const calculateProgress = () => {
     const totalItems = (sccmData.computers || []).length;
@@ -542,8 +543,8 @@ const Infrastructure = () => {
                           <span className="ml-1 text-gray-900 dark:text-gray-100">{item.memory || 'Not specified'}</span>
                         </div>
                         <div>
-                          <span className="font-medium text-gray-600 dark:text-gray-400">Domain:</span>
-                          <span className="ml-1 text-gray-900 dark:text-gray-100">{item.domain || 'Not specified'}</span>
+                          <span className="font-medium text-gray-600 dark:text-gray-400">Last Login Username:</span>
+                          <span className="ml-1 text-gray-900 dark:text-gray-100">{item.lastLoginUsername || 'Not specified'}</span>
                         </div>
                       </div>
                       
@@ -689,10 +690,10 @@ const Infrastructure = () => {
                 placeholder="512GB SSD, 1TB HDD"
               />
               <Input
-                label="Domain"
-                value={editingItem.domain}
-                onChange={(e) => setEditingItem({ ...editingItem, domain: e.target.value })}
-                placeholder="DOMAIN, WORKGROUP"
+                label="Last Login Username"
+                value={editingItem.lastLoginUsername}
+                onChange={(e) => setEditingItem({ ...editingItem, lastLoginUsername: e.target.value })}
+                placeholder="e.g., John.Doe, Administrator"
               />
             </div>
 
@@ -853,7 +854,7 @@ AKRON-D2TGT1N3    16484120    CL4-3D256-Q11 NVMe SSSTC 256GB    OptiPlex 3090   
               Cancel
             </Button>
             <Button 
-              onClick={processPasteData}
+              onClick={debounce(processPasteData, 300)}
               disabled={!pasteData.trim()}
             >
               <Clipboard size={16} />

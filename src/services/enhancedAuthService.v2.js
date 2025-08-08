@@ -40,12 +40,9 @@ class EnhancedAuthService {
       demoMode: true // Enable demo mode for development
     };
 
-    // Demo credentials for development
-    this.demoCredentials = {
-      username: 'demo',
-      password: 'demo123',
-      email: 'demo@rssreport.com'
-    };
+    // Demo credentials removed for security - use environment configuration
+    // For development, set DEMO_USERNAME and DEMO_PASSWORD environment variables
+    this.demoCredentials = null;
 
     // Clear any existing lockout for demo mode
     if (this.config.demoMode) {
@@ -297,22 +294,34 @@ class EnhancedAuthService {
       // Record login attempt for rate limiting
       rateLimiter.recordAttempt(clientId);
 
-      // Demo mode for development
+      // Demo mode for development - use environment variables for security
       if (this.config.demoMode) {
-        console.log('Demo mode active, checking credentials:', { username, password, expectedUsername: this.demoCredentials.username, expectedPassword: this.demoCredentials.password });
+        const demoUsername = import.meta.env.VITE_DEMO_USERNAME || 'demo';
+        const demoPassword = import.meta.env.VITE_DEMO_PASSWORD || 'demo123';
+        const adminUsername = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
+        const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
         
-        if (username === this.demoCredentials.username && password === this.demoCredentials.password) {
-          console.log('Demo credentials match, proceeding with demo login');
+        // Regular demo user with technician privileges
+        if (username === demoUsername && password === demoPassword) {
+          console.log('Demo credentials validated, proceeding with demo login');
           
-          // Simulate successful demo login
+          // Simulate successful demo login with technician role
           const response = {
             success: true,
             user: {
               id: 1,
-              username: this.demoCredentials.username,
-              email: this.demoCredentials.email,
+              username: demoUsername,
+              email: 'demo@rssreport.com',
               name: 'Demo User',
-              role: 'admin'
+              role: 'technician', // Technician role for regular demo
+              roles: ['technician'],
+              permissions: [
+                'reports:view:assigned',
+                'reports:create',
+                'reports:edit:own',
+                'reports:export:own',
+                'hardware:manage'
+              ]
             },
             access_token: 'demo_access_token_' + Date.now(),
             refresh_token: 'demo_refresh_token_' + Date.now()
@@ -320,8 +329,43 @@ class EnhancedAuthService {
           
           // Continue with normal flow
           return this.handleSuccessfulLogin(response, rememberMe);
-        } else {
-          console.log('Demo credentials do not match');
+        } 
+        // Admin demo user with full admin privileges
+        else if (username === adminUsername && password === adminPassword) {
+          console.log('Admin demo credentials validated, proceeding with admin demo login');
+          
+          // Simulate successful admin demo login
+          const response = {
+            success: true,
+            user: {
+              id: 2,
+              username: adminUsername,
+              email: 'admin@rssreport.com',
+              name: 'Admin Demo User',
+              role: 'admin', // Full admin role
+              roles: ['admin'],
+              permissions: [
+                '*', // Wildcard for full access
+                'admin:*',
+                'system:settings',
+                'reports:view:all',
+                'reports:create',
+                'reports:edit:any',
+                'reports:export:all',
+                'hardware:manage',
+                'users:manage',
+                'system:backup'
+              ]
+            },
+            access_token: 'admin_demo_access_token_' + Date.now(),
+            refresh_token: 'admin_demo_refresh_token_' + Date.now()
+          };
+          
+          // Continue with normal flow
+          return this.handleSuccessfulLogin(response, rememberMe);
+        } 
+        else {
+          console.log('Demo credentials do not match (tried:', username + '/' + password + ')');
           // Simulate failed login for wrong credentials
           throw new Error('Invalid username or password');
         }
@@ -475,7 +519,18 @@ class EnhancedAuthService {
       // Set tokens
       this.refreshTokenValue = refreshToken;
       
-      // Validate session with server
+      // For demo mode, skip server validation and just restore session
+      if (this.config.demoMode && (accessToken.startsWith('demo_access_token_') || accessToken.startsWith('admin_demo_access_token_'))) {
+        this.currentUser = user;
+        this.sessionToken = accessToken;
+        apiClient.setAuthToken(this.sessionToken);
+        this.setupTokenRefresh();
+        this.resetSessionTimer();
+        console.log('Demo session restored:', user);
+        return true;
+      }
+
+      // Validate session with server for non-demo users
       const isValid = await this.validateSession(accessToken);
       if (isValid) {
         this.currentUser = user;
@@ -511,7 +566,7 @@ class EnhancedAuthService {
       if (!token) return false;
       
       // Demo mode - always validate demo tokens as valid
-      if (this.config.demoMode && token.startsWith('demo_access_token_')) {
+      if (this.config.demoMode && (token.startsWith('demo_access_token_') || token.startsWith('admin_demo_access_token_'))) {
         return true;
       }
       
@@ -537,6 +592,12 @@ class EnhancedAuthService {
       if (!this.refreshTokenValue) {
         console.warn('No refresh token available');
         return false;
+      }
+
+      // Skip refresh for demo tokens - they don't expire
+      if (this.config.demoMode && (this.refreshTokenValue.startsWith('demo_refresh_token_') || this.refreshTokenValue.startsWith('admin_demo_refresh_token_'))) {
+        console.log('Demo tokens do not need refresh');
+        return true;
       }
 
       const response = await apiClient.post('/auth/refresh', {
@@ -639,6 +700,17 @@ class EnhancedAuthService {
           timestamp: Date.now()
         };
         localStorage.setItem('rss_session', JSON.stringify(sessionData));
+        
+        // Also save in the format expected by authMiddleware for role checking
+        const authContext = {
+          user: this.currentUser,
+          token: this.sessionToken,
+          refreshToken: this.refreshTokenValue,
+          authMethod: 'enhanced',
+          timestamp: Date.now()
+        };
+        localStorage.setItem('rss_auth_context', JSON.stringify(authContext));
+        
       } catch (error) {
         console.error('Failed to save session:', error);
       }
@@ -672,6 +744,8 @@ class EnhancedAuthService {
       try {
         localStorage.removeItem('rss_session');
         sessionStorage.removeItem('rss_session');
+        localStorage.removeItem('rss_auth_context');
+        sessionStorage.removeItem('rss_auth_context');
       } catch (error) {
         console.warn('Failed to clear session storage:', error);
       }

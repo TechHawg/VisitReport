@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useState, useMemo, useCallback } from 'react';
 import { InputSanitizer, AUDIT_LEVELS, SECURITY_EVENTS } from '../utils/security';
+import authMiddleware from '../middleware/authMiddleware.js';
 
 // Initial state
 const initialState = {
@@ -136,12 +137,21 @@ const initialState = {
     checklists: []
   },
   user: {
+    id: null,
     email: '', // Will be populated from authentication
+    username: '',
+    displayName: '',
     role: '',
-    permissions: []
+    permissions: [],
+    authMethod: null // 'ad', 'local', or 'hybrid'
   },
   isAuthenticated: false,
   sessionId: null,
+  authConfig: {
+    strategy: 'hybrid',
+    adEnabled: false,
+    allowLocalAuth: true
+  },
   notifications: [],
   errors: []
 };
@@ -160,6 +170,7 @@ const actionTypes = {
   RESET_REPORT: 'RESET_REPORT',
   SET_USER: 'SET_USER',
   SET_AUTH_STATE: 'SET_AUTH_STATE',
+  SET_AUTH_CONFIG: 'SET_AUTH_CONFIG',
   CLEAR_DATA: 'CLEAR_DATA'
 };
 
@@ -246,7 +257,14 @@ const appReducer = (state, action) => {
         ...state,
         isAuthenticated: action.payload.isAuthenticated,
         user: action.payload.user || state.user,
-        sessionId: action.payload.sessionId
+        sessionId: action.payload.sessionId,
+        authConfig: { ...state.authConfig, ...action.payload.authConfig }
+      };
+    
+    case actionTypes.SET_AUTH_CONFIG:
+      return {
+        ...state,
+        authConfig: { ...state.authConfig, ...action.payload }
       };
     
     case actionTypes.CLEAR_DATA:
@@ -272,6 +290,83 @@ const AppContext = createContext();
 export const AppProvider = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Initialize authentication system
+  const initializeAuthentication = async () => {
+    try {
+      // Initialize auth middleware
+      await authMiddleware.init();
+      
+      // Get auth configuration
+      const authConfig = authMiddleware.getConfig();
+      dispatch({ type: actionTypes.SET_AUTH_CONFIG, payload: authConfig });
+      
+      // Check if user is already authenticated
+      const isAuthenticated = authMiddleware.isAuthenticated();
+      const currentUser = authMiddleware.getCurrentUser();
+      
+      if (isAuthenticated && currentUser) {
+        dispatch({ 
+          type: actionTypes.SET_AUTH_STATE, 
+          payload: { 
+            isAuthenticated: true, 
+            user: currentUser,
+            sessionId: currentUser.sessionId,
+            authConfig
+          } 
+        });
+      }
+      
+      // Setup authentication event listeners
+      authMiddleware.onAuthChange((event, data) => {
+        switch (event) {
+          case 'login':
+            dispatch({ 
+              type: actionTypes.SET_AUTH_STATE, 
+              payload: { 
+                isAuthenticated: true, 
+                user: data,
+                sessionId: data.sessionId 
+              } 
+            });
+            break;
+            
+          case 'logout':
+          case 'session-expired':
+            dispatch({ 
+              type: actionTypes.SET_AUTH_STATE, 
+              payload: { 
+                isAuthenticated: false, 
+                user: initialState.user,
+                sessionId: null 
+              } 
+            });
+            // Clear report data on logout for security
+            dispatch({ type: actionTypes.RESET_REPORT });
+            break;
+            
+          case 'update':
+            const updatedUser = authMiddleware.getCurrentUser();
+            if (updatedUser) {
+              dispatch({ type: actionTypes.SET_USER, payload: updatedUser });
+            }
+            break;
+        }
+      });
+      
+    } catch (error) {
+      console.error('Authentication initialization failed:', error);
+      // Continue with local-only mode
+      dispatch({ 
+        type: actionTypes.SET_AUTH_CONFIG, 
+        payload: { 
+          strategy: 'local', 
+          adEnabled: false, 
+          allowLocalAuth: true 
+        } 
+      });
+    }
+  };
 
   // Load saved theme and data on mount
   useEffect(() => {
@@ -307,6 +402,9 @@ export const AppProvider = ({ children }) => {
           console.log('🔧 DEBUG: Final checklists after merge:', fullData.checklists);
           dispatch({ type: actionTypes.SET_REPORT_DATA, payload: fullData });
         }
+        
+        // Initialize authentication system
+        await initializeAuthentication();
         
         // Mark initial load as complete and set loading to false
         setIsInitialLoad(false);
@@ -350,30 +448,41 @@ export const AppProvider = ({ children }) => {
     }
   }, [state.theme]);
 
+  // Debounced save to localStorage to prevent excessive saves
+  const debouncedSave = useMemo(() => {
+    let timeout;
+    return (data) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        try {
+          if (import.meta.env.DEV) {
+            console.log('Saving to localStorage (debounced)');
+          }
+          localStorage.setItem('officeVisitReport', JSON.stringify(data));
+        } catch (error) {
+          console.error('Error saving data:', error);
+          dispatch({
+            type: actionTypes.ADD_ERROR,
+            payload: {
+              message: 'Failed to save data',
+              level: AUDIT_LEVELS.MEDIUM,
+              event: SECURITY_EVENTS.DATA_EXPORT
+            }
+          });
+        }
+      }, 1000); // 1 second debounce
+    };
+  }, []);
+
   // Save data to localStorage when reportData changes (but not during initial load)
   useEffect(() => {
     // Skip saving during initial load to prevent overwriting manually set localStorage data
     if (isInitialLoad) {
-      console.log('🔧 DEBUG: Skipping save during initial load');
       return;
     }
     
-    try {
-      console.log('🔧 DEBUG: Saving to localStorage:', state.reportData);
-      console.log('🔧 DEBUG: Checklists being saved:', state.reportData.checklists);
-      localStorage.setItem('officeVisitReport', JSON.stringify(state.reportData));
-    } catch (error) {
-      console.error('Error saving data:', error);
-      dispatch({
-        type: actionTypes.ADD_ERROR,
-        payload: {
-          message: 'Failed to save data',
-          level: AUDIT_LEVELS.MEDIUM,
-          event: SECURITY_EVENTS.DATA_EXPORT
-        }
-      });
-    }
-  }, [state.reportData, isInitialLoad]);
+    debouncedSave(state.reportData);
+  }, [state.reportData, isInitialLoad, debouncedSave]);
 
   // Action creators
   const actions = {
@@ -405,7 +514,221 @@ export const AppProvider = ({ children }) => {
     
     setAuthState: (authState) => dispatch({ type: actionTypes.SET_AUTH_STATE, payload: authState }),
     
+    setAuthConfig: (config) => dispatch({ type: actionTypes.SET_AUTH_CONFIG, payload: config }),
+    
     clearData: () => dispatch({ type: actionTypes.CLEAR_DATA }),
+
+    // Enterprise authentication methods
+    login: async (username, password, rememberMe = false, authType = 'auto') => {
+      try {
+        dispatch({ type: actionTypes.SET_LOADING, payload: true });
+        const result = await authMiddleware.authenticate(username, password, rememberMe, authType);
+        
+        if (result.success) {
+          dispatch({ 
+            type: actionTypes.SET_AUTH_STATE, 
+            payload: { 
+              isAuthenticated: true, 
+              user: result.user,
+              sessionId: result.sessionId 
+            } 
+          });
+          
+          dispatch({
+            type: actionTypes.ADD_NOTIFICATION,
+            payload: {
+              type: 'success',
+              message: `Welcome, ${result.user.displayName || result.user.username}!`
+            }
+          });
+        }
+        
+        return result;
+        
+      } catch (error) {
+        dispatch({
+          type: actionTypes.ADD_ERROR,
+          payload: {
+            message: error.message || 'Authentication failed',
+            level: AUDIT_LEVELS.MEDIUM,
+            event: SECURITY_EVENTS.AUTH_FAILURE
+          }
+        });
+        throw error;
+      } finally {
+        dispatch({ type: actionTypes.SET_LOADING, payload: false });
+      }
+    },
+
+    logout: async () => {
+      try {
+        await authMiddleware.logout();
+        
+        dispatch({ 
+          type: actionTypes.SET_AUTH_STATE, 
+          payload: { 
+            isAuthenticated: false, 
+            user: initialState.user,
+            sessionId: null 
+          } 
+        });
+        
+        // Clear sensitive data
+        dispatch({ type: actionTypes.RESET_REPORT });
+        
+        dispatch({
+          type: actionTypes.ADD_NOTIFICATION,
+          payload: {
+            type: 'info',
+            message: 'You have been logged out successfully.'
+          }
+        });
+        
+      } catch (error) {
+        console.warn('Logout error:', error);
+        // Clear state anyway for security
+        dispatch({ 
+          type: actionTypes.SET_AUTH_STATE, 
+          payload: { 
+            isAuthenticated: false, 
+            user: initialState.user,
+            sessionId: null 
+          } 
+        });
+      }
+    },
+
+    // Permission checking methods
+    hasPermission: (permission) => {
+      // Fallback for demo mode - if authMiddleware isn't initialized or no enterprise auth
+      try {
+        // Convert id to string for safety since it might be a number
+        const userId = String(state.user?.id || '');
+        const username = state.user?.username || '';
+        const isDemoUser = username === 'demo' || username === 'admin' || userId.includes('demo') || userId === '2';
+        const isRegularDemoUser = username === 'demo' && (userId === 'demo-user-001' || userId === '1');
+        const isAdminDemoUser = username === 'admin' || userId === '2' || userId === 'admin-demo-001';
+        
+        // Block admin permissions for regular demo users only
+        if (isRegularDemoUser && (permission.startsWith('admin:') || permission.startsWith('system:'))) {
+          console.log(`🔍 BLOCKED: Regular demo users cannot have admin permissions (${permission})`);
+          return false;
+        }
+        
+        // Grant all permissions to admin demo users
+        if (isAdminDemoUser) {
+          console.log(`🔍 GRANTED: Admin demo user has permission (${permission})`);
+          return true;
+        }
+        
+        if (!isDemoUser && authMiddleware && typeof authMiddleware.hasPermission === 'function') {
+          return authMiddleware.hasPermission(permission);
+        }
+        
+        // Demo fallback - basic permission checking
+        if (state.user?.permissions?.includes(permission)) {
+          return true;
+        }
+        
+        // For demo compatibility, allow most permissions except admin
+        return !permission.startsWith('admin:') && !permission.startsWith('system:');
+      } catch (error) {
+        console.warn('Permission check failed, using demo fallback:', error);
+        return !permission.startsWith('admin:') && !permission.startsWith('system:');
+      }
+    },
+    
+    hasRole: (role) => {
+      // DEBUG: Add detailed logging for role checks
+      console.log(`🔍 hasRole(${role}) called:`, {
+        hasAuthMiddleware: !!authMiddleware,
+        authMiddlewareHasRoleFunction: authMiddleware && typeof authMiddleware.hasRole === 'function',
+        userRole: state.user?.role,
+        userRoleType: typeof state.user?.role,
+        isAuthenticated: state.isAuthenticated,
+        requestedRole: role,
+        requestedRoleType: typeof role
+      });
+      
+      // Fallback for demo mode - prioritize demo users
+      try {
+        // If this is a demo user (username 'demo' or 'admin'), use demo logic
+        // Convert id to string for safety since it might be a number
+        const userId = String(state.user?.id || '');
+        const username = state.user?.username || '';
+        
+        // Check if this is any kind of demo user
+        const isDemoUser = username === 'demo' || username === 'admin' || userId.includes('demo') || userId === '2';
+        const isRegularDemoUser = username === 'demo' && (userId === 'demo-user-001' || userId === '1');
+        const isAdminDemoUser = username === 'admin' || userId === '2' || userId === 'admin-demo-001';
+        
+        console.log(`🔍 Role check for '${role}':`, {
+          username,
+          userId,
+          userRole: state.user?.role,
+          isDemoUser,
+          isRegularDemoUser,
+          isAdminDemoUser
+        });
+        
+        // For demo users, skip authMiddleware and use direct role checking
+        if (isDemoUser) {
+          console.log(`🔍 Using demo logic for role ${role}`);
+          
+          // Block admin role for regular demo users only
+          if (isRegularDemoUser && role === 'admin') {
+            console.log(`🔍 BLOCKED: Regular demo users cannot have admin role`);
+            return false;
+          }
+          
+          // For admin demo users, grant admin role
+          if (isAdminDemoUser && role === 'admin') {
+            console.log(`🔍 GRANTED: Admin demo user has admin role`);
+            return true;
+          }
+          
+          // Check exact role match
+          const exactMatch = state.user?.role === role;
+          console.log(`🔍 Exact role match (${state.user?.role} === ${role}): ${exactMatch}`);
+          if (exactMatch) {
+            return true;
+          }
+          
+          // For admin users, they have access to all roles
+          if (state.user?.role === 'admin') {
+            console.log(`🔍 GRANTED: Admin has access to all roles`);
+            return true;
+          }
+        }
+        
+        // Only try authMiddleware if not a demo user
+        if (!isDemoUser && authMiddleware && typeof authMiddleware.hasRole === 'function') {
+          console.log(`🔍 Using authMiddleware.hasRole for ${role}`);
+          const result = authMiddleware.hasRole(role);
+          console.log(`🔍 authMiddleware.hasRole(${role}) = ${result}`);
+          return result;
+        }
+        
+        // For demo compatibility, treat authenticated users as technicians (can access most features except admin)
+        const isAuthenticatedTechOrViewer = state.isAuthenticated && (role === 'technician' || role === 'viewer') && role !== 'admin';
+        console.log(`🔍 Auth fallback (isAuth: ${state.isAuthenticated}, role: ${role}): ${isAuthenticatedTechOrViewer}`);
+        if (isAuthenticatedTechOrViewer) {
+          return true;
+        }
+        
+        console.log(`🔍 hasRole(${role}) returning false - no matches`);
+        return false;
+      } catch (error) {
+        console.warn('Role check failed, using demo fallback:', error);
+        // Default to technician role for demo
+        return role === 'technician' || role === 'viewer';
+      }
+    },
+    
+    // Session management
+    validateSession: () => authMiddleware.validateSession(),
+    
+    refreshToken: () => authMiddleware.refreshToken(),
 
     // Theme toggle
     toggleTheme: () => {

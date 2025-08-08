@@ -1,0 +1,88 @@
+{
+  "timestamp": "2025-08-06T22:54:30.212Z",
+  "functionalTests": {
+    "Initial Page Load": {
+      "status": "PASSED",
+      "timestamp": "2025-08-06T22:54:33.978Z",
+      "title": "RSS Visit Report",
+      "url": "http://localhost:5173/",
+      "hasReactApp": true
+    },
+    "Authentication Form Detection": {
+      "status": "PASSED",
+      "timestamp": "2025-08-06T22:54:35.605Z",
+      "hasForm": true,
+      "hasUsernameField": true,
+      "hasPasswordField": true,
+      "hasSubmitButton": true,
+      "formReady": true
+    },
+    "Authentication Login": {
+      "status": "FAILED",
+      "error": "Still showing login form after submission",
+      "timestamp": "2025-08-06T22:54:45.288Z"
+    },
+    "Main Navigation Structure": {
+      "status": "PASSED",
+      "timestamp": "2025-08-06T22:54:45.971Z",
+      "navigationElementsFound": 0,
+      "navigationLabels": [],
+      "hasNavigation": false
+    },
+    "Page Navigation Functionality": {
+      "status": "PASSED",
+      "timestamp": "2025-08-06T22:54:52.851Z",
+      "totalPagesAttempted": 4,
+      "successfulNavigations": 0,
+      "pagesNavigated": [],
+      "navigationErrors": [
+        "Dashboard: Error boundary or missing content",
+        "Infrastructure: Error boundary or missing content",
+        "Inventory: Error boundary or missing content",
+        "Storage: Error boundary or missing content"
+      ],
+      "successRate": 0
+    },
+    "Data Entry and Forms": {
+      "status": "PASSED",
+      "timestamp": "2025-08-06T22:54:58.690Z",
+      "totalInputFields": 1,
+      "totalSelectFields": 0,
+      "workingInputs": 1,
+      "workingSelects": 0,
+      "dataEntryFunctional": true
+    },
+    "SCCM Data Processing": {
+      "status": "PASSED",
+      "timestamp": "2025-08-06T22:55:01.210Z",
+      "sccmPageAccessible": true,
+      "hasDataInput": false,
+      "reason": "No textarea found for SCCM data"
+    },
+    "Theme Switching": {
+      "status": "FAILED",
+      "error": "SyntaxError: Failed to execute 'querySelector' on 'Document': 'button[title*=\"theme\"], button[aria-label*=\"theme\"], button:has-text(\"🌙\"), button:has-text(\"☀️\")' is not a valid selector.",
+      "timestamp": "2025-08-06T22:55:01.312Z"
+    },
+    "Error Boundary Testing": {
+      "status": "PASSED",
+      "timestamp": "2025-08-06T22:55:03.985Z",
+      "invalidPageHandled": true,
+      "hasGracefulError": false,
+      "recoveredFromError": false,
+      "errorHandlingWorking": true
+    }
+  },
+  "screenshots": [
+    "screenshot-authentication-login-1754520885289.png",
+    "screenshot-theme-switching-1754520901313.png"
+  ],
+  "summary": {
+    "total": 9,
+    "passed": 7,
+    "failed": 2,
+    "warnings": 0,
+    "successRate": 77.77777777777779,
+    "productionReady": false
+  }
+}

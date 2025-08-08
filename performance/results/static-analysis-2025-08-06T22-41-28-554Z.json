@@ -1,0 +1,1750 @@
+{
+  "timestamp": "2025-08-06T22:41:28.554Z",
+  "projectRoot": "/home/jeolsen/projects/RSS_Visit_Report",
+  "analysis": {
+    "codeComplexity": {},
+    "potentialIssues": [
+      {
+        "type": "Missing Memoization",
+        "file": "src/App.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/App.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/components/ImportExport/DataTemplatesModal.jsx",
+        "severity": "medium",
+        "description": "Component has 326 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/ImportExport/DataTemplatesModal.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ImportExport/DataTemplatesModal.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/components/ImportExport/ImportExport.jsx",
+        "severity": "medium",
+        "description": "Component has 1203 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ImportExport/ImportExport.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/PageRouter.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/PageRouter.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/auth/AuthGuard.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/auth/AuthGuard.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/components/auth/EnhancedLoginForm.jsx",
+        "severity": "medium",
+        "description": "Component has 567 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/auth/EnhancedLoginForm.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/auth/EnhancedLoginForm.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/components/auth/LoginForm.jsx",
+        "severity": "medium",
+        "description": "Component has 230 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/auth/LoginForm.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/auth/LoginForm.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/auth/UserMenu.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/auth/UserMenu.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/components/layout/Header.jsx",
+        "severity": "medium",
+        "description": "Component has 266 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/layout/Header.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/layout/Header.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/layout/Navigation.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/layout/Navigation.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/components/rack/DeviceModal.jsx",
+        "severity": "medium",
+        "description": "Component has 496 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/rack/DeviceModal.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/rack/DeviceModal.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/components/rack/DeviceUnit.jsx",
+        "severity": "medium",
+        "description": "Component has 222 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/rack/DeviceUnit.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/rack/DeviceUnit.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/rack/RackHeader.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/rack/RackHeader.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/rack/RackUnits.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/rack/RackUnits.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/rack/RackVisualizer.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/rack/RackVisualizer.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/Alert.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/ui/Button.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/Button.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/ui/ConfirmDialog.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/ConfirmDialog.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/ui/Input.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/Input.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/Modal.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/ui/Notification.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/Notification.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/components/ui/PhotoUpload.jsx",
+        "severity": "medium",
+        "description": "Component has 242 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/ui/PhotoUpload.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/PhotoUpload.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/ui/ProgressBar.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/ProgressBar.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/Section.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/Select.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/components/ui/Textarea.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/components/ui/Textarea.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/context/AppContext.jsx",
+        "severity": "medium",
+        "description": "Component has 453 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/context/AppContext.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/hooks/useDeviceOperations.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/hooks/useLocalStorage.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/hooks/useReport.js",
+        "severity": "medium",
+        "description": "Component has 212 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/hooks/useReport.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/hooks/useReport.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Admin/Admin.jsx",
+        "severity": "medium",
+        "description": "Component has 972 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Admin/Admin.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Admin/Admin.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Checklists/Checklists.jsx",
+        "severity": "medium",
+        "description": "Component has 304 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Checklists/Checklists.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Checklists/Checklists.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Dashboard/Dashboard.jsx",
+        "severity": "medium",
+        "description": "Component has 560 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Dashboard/Dashboard.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Dashboard/Dashboard.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/FollowUpItems/FollowUpItems.jsx",
+        "severity": "medium",
+        "description": "Component has 712 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/FollowUpItems/FollowUpItems.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/FollowUpItems/FollowUpItems.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Infrastructure/Infrastructure.jsx",
+        "severity": "medium",
+        "description": "Component has 882 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Infrastructure/Infrastructure.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Inventory/Inventory.jsx",
+        "severity": "medium",
+        "description": "Component has 814 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Inventory/Inventory.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Inventory/Inventory.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Issues/Issues.jsx",
+        "severity": "medium",
+        "description": "Component has 649 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Issues/Issues.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Issues/Issues.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/IssuesActions/IssuesActions.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/IssuesActions/IssuesActions.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/OfficeGrading/OfficeGrading.jsx",
+        "severity": "medium",
+        "description": "Component has 292 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/OfficeGrading/OfficeGrading.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/OfficeGrading/OfficeGrading.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/PCRepairs/PCRepairs.jsx",
+        "severity": "medium",
+        "description": "Component has 703 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/PCRepairs/PCRepairs.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/PCRepairs/PCRepairs.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Photos/Photos.jsx",
+        "severity": "medium",
+        "description": "Component has 361 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Photos/Photos.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Photos/Photos.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Recommendations/Recommendations.jsx",
+        "severity": "medium",
+        "description": "Component has 589 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Recommendations/Recommendations.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Recommendations/Recommendations.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Recycling/Recycling.jsx",
+        "severity": "medium",
+        "description": "Component has 880 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Recycling/Recycling.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Recycling/Recycling.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Storage/Storage.jsx",
+        "severity": "medium",
+        "description": "Component has 2240 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/pages/Storage/Storage.jsx",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Storage/Storage.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/pages/Summary/Summary.jsx",
+        "severity": "medium",
+        "description": "Component has 686 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/pages/Summary/Summary.jsx",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/services/apiClient.js",
+        "severity": "medium",
+        "description": "Component has 392 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/services/apiClient.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/services/apiClient.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/services/authService.js",
+        "severity": "medium",
+        "description": "Component has 544 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/services/authService.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/services/authService.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/services/enhancedAuthService.js",
+        "severity": "medium",
+        "description": "Component has 360 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/services/enhancedAuthService.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/services/enhancedAuthService.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/services/enhancedAuthService.v2.js",
+        "severity": "medium",
+        "description": "Component has 785 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/services/enhancedAuthService.v2.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/services/enhancedAuthService.v2.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/services/pdfReportService.js",
+        "severity": "medium",
+        "description": "Component has 636 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/services/pdfReportService.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/services/pdfReportService.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/services/reportDatabaseService.js",
+        "severity": "medium",
+        "description": "Component has 528 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/services/reportDatabaseService.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/services/reportDatabaseService.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/utils/dataTemplates.js",
+        "severity": "medium",
+        "description": "Component has 592 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/utils/dataTemplates.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/utils/dataTemplates.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/utils/logger.js",
+        "severity": "medium",
+        "description": "Component has 505 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/utils/logger.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/utils/logger.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/utils/memoryManager.js",
+        "severity": "medium",
+        "description": "Component has 500 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/utils/memoryManager.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/utils/memoryManager.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/utils/monitoring.js",
+        "severity": "medium",
+        "description": "Component has 648 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/utils/monitoring.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/utils/monitoring.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/utils/rackUtils.js",
+        "severity": "medium",
+        "description": "Component has 209 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/utils/rackUtils.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/utils/rackUtils.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/utils/security.js",
+        "severity": "medium",
+        "description": "Component has 430 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/utils/security.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/utils/security.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Large Component",
+        "file": "src/utils/settings.js",
+        "severity": "medium",
+        "description": "Component has 278 lines",
+        "recommendation": "Consider breaking into smaller components"
+      },
+      {
+        "type": "Missing Memoization",
+        "file": "src/utils/settings.js",
+        "severity": "low",
+        "description": "Component has complex logic but no memoization",
+        "recommendation": "Consider adding React.memo, useMemo, or useCallback"
+      },
+      {
+        "type": "Inline Objects",
+        "file": "src/utils/settings.js",
+        "severity": "medium",
+        "description": "Component creates objects/functions inline in render",
+        "recommendation": "Move objects outside component or use useMemo/useCallback"
+      },
+      {
+        "type": "Complex SCCM Processing",
+        "file": "src/pages/Infrastructure/Infrastructure.jsx",
+        "severity": "high",
+        "description": "SCCM processing function is 163 lines",
+        "recommendation": "Consider moving to Web Worker or breaking into smaller functions"
+      },
+      {
+        "type": "SCCM Performance",
+        "file": "src/pages/Infrastructure/Infrastructure.jsx",
+        "severity": "medium",
+        "description": "SCCM processing lacks performance optimizations",
+        "recommendation": "Add debouncing, progress indicators, or Web Worker processing"
+      }
+    ],
+    "recommendations": [
+      {
+        "priority": "HIGH",
+        "category": "Critical Performance Issues",
+        "issue": "1 critical performance issues identified",
+        "recommendation": "Address SCCM processing optimization and component splitting",
+        "files": [
+          "src/pages/Infrastructure/Infrastructure.jsx"
+        ]
+      },
+      {
+        "priority": "MEDIUM",
+        "category": "Component Performance",
+        "issue": "86 components need optimization",
+        "recommendation": "Add memoization and reduce component complexity",
+        "impact": "Improved rendering performance"
+      },
+      {
+        "priority": "LOW",
+        "category": "Memory Management",
+        "issue": "Memory manager exists but may need tuning",
+        "recommendation": "Review memory manager settings for production environment",
+        "impact": "Better memory usage and stability"
+      }
+    ],
+    "componentAnalysis": {
+      "src/App.jsx": {
+        "lineCount": 72,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 7
+      },
+      "src/components/ImportExport/DataTemplatesModal.jsx": {
+        "lineCount": 326,
+        "hasUseEffect": true,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 7
+      },
+      "src/components/ImportExport/ImportExport.jsx": {
+        "lineCount": 1203,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": true,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 11
+      },
+      "src/components/PageRouter.jsx": {
+        "lineCount": 140,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 10
+      },
+      "src/components/auth/AuthGuard.jsx": {
+        "lineCount": 122,
+        "hasUseEffect": true,
+        "hasUseState": true,
+        "hasUseContext": true,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 4
+      },
+      "src/components/auth/EnhancedLoginForm.jsx": {
+        "lineCount": 567,
+        "hasUseEffect": true,
+        "hasUseState": true,
+        "hasUseContext": true,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 4
+      },
+      "src/components/auth/LoginForm.jsx": {
+        "lineCount": 230,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": true,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 3
+      },
+      "src/components/auth/UserMenu.jsx": {
+        "lineCount": 200,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": true,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 3
+      },
+      "src/components/layout/Header.jsx": {
+        "lineCount": 266,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 9
+      },
+      "src/components/layout/Navigation.jsx": {
+        "lineCount": 106,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 3
+      },
+      "src/components/rack/DeviceModal.jsx": {
+        "lineCount": 496,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 6
+      },
+      "src/components/rack/DeviceUnit.jsx": {
+        "lineCount": 222,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 4
+      },
+      "src/components/rack/RackHeader.jsx": {
+        "lineCount": 161,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/components/rack/RackUnits.jsx": {
+        "lineCount": 192,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 5
+      },
+      "src/components/rack/RackVisualizer.jsx": {
+        "lineCount": 135,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 6
+      },
+      "src/components/ui/Alert.jsx": {
+        "lineCount": 17,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": false,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 1
+      },
+      "src/components/ui/Button.jsx": {
+        "lineCount": 76,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 1
+      },
+      "src/components/ui/ConfirmDialog.jsx": {
+        "lineCount": 82,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 3
+      },
+      "src/components/ui/Input.jsx": {
+        "lineCount": 50,
+        "hasUseEffect": true,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 1
+      },
+      "src/components/ui/Modal.jsx": {
+        "lineCount": 29,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": false,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 2
+      },
+      "src/components/ui/Notification.jsx": {
+        "lineCount": 72,
+        "hasUseEffect": true,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 3
+      },
+      "src/components/ui/PhotoUpload.jsx": {
+        "lineCount": 242,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 3
+      },
+      "src/components/ui/ProgressBar.jsx": {
+        "lineCount": 40,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 1
+      },
+      "src/components/ui/Section.jsx": {
+        "lineCount": 26,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": false,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/components/ui/Select.jsx": {
+        "lineCount": 16,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": false,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 1
+      },
+      "src/components/ui/Textarea.jsx": {
+        "lineCount": 39,
+        "hasUseEffect": true,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 1
+      },
+      "src/context/AppContext.jsx": {
+        "lineCount": 453,
+        "hasUseEffect": true,
+        "hasUseState": true,
+        "hasUseContext": true,
+        "hasMemoization": true,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/hooks/useDeviceOperations.js": {
+        "lineCount": 88,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": true,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/hooks/useLocalStorage.js": {
+        "lineCount": 60,
+        "hasUseEffect": true,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": false,
+        "hasEventHandlers": false,
+        "importsCount": 1
+      },
+      "src/hooks/useRackCalculations.js": {
+        "lineCount": 35,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": true,
+        "hasComplexLogic": true,
+        "hasInlineObjects": false,
+        "hasEventHandlers": false,
+        "importsCount": 3
+      },
+      "src/hooks/useReport.js": {
+        "lineCount": 212,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/main.jsx": {
+        "lineCount": 13,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": false,
+        "hasInlineObjects": false,
+        "hasEventHandlers": false,
+        "importsCount": 4
+      },
+      "src/pages/Admin/Admin.jsx": {
+        "lineCount": 972,
+        "hasUseEffect": true,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 8
+      },
+      "src/pages/Checklists/Checklists.jsx": {
+        "lineCount": 304,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 6
+      },
+      "src/pages/Dashboard/Dashboard.jsx": {
+        "lineCount": 560,
+        "hasUseEffect": true,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 9
+      },
+      "src/pages/FollowUpItems/FollowUpItems.jsx": {
+        "lineCount": 712,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 13
+      },
+      "src/pages/Infrastructure/Infrastructure.jsx": {
+        "lineCount": 882,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": true,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 12
+      },
+      "src/pages/Inventory/Inventory.jsx": {
+        "lineCount": 814,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 13
+      },
+      "src/pages/Issues/Issues.jsx": {
+        "lineCount": 649,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 13
+      },
+      "src/pages/IssuesActions/IssuesActions.jsx": {
+        "lineCount": 81,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 8
+      },
+      "src/pages/OfficeGrading/OfficeGrading.jsx": {
+        "lineCount": 292,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 11
+      },
+      "src/pages/PCRepairs/PCRepairs.jsx": {
+        "lineCount": 703,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 13
+      },
+      "src/pages/Photos/Photos.jsx": {
+        "lineCount": 361,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 11
+      },
+      "src/pages/Recommendations/Recommendations.jsx": {
+        "lineCount": 589,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 13
+      },
+      "src/pages/Recycling/Recycling.jsx": {
+        "lineCount": 880,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 12
+      },
+      "src/pages/Storage/Storage.jsx": {
+        "lineCount": 2240,
+        "hasUseEffect": false,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 15
+      },
+      "src/pages/Summary/Summary.jsx": {
+        "lineCount": 686,
+        "hasUseEffect": true,
+        "hasUseState": true,
+        "hasUseContext": false,
+        "hasMemoization": true,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": true,
+        "importsCount": 14
+      },
+      "src/services/apiClient.js": {
+        "lineCount": 392,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 1
+      },
+      "src/services/authService.js": {
+        "lineCount": 544,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/services/enhancedAuthService.js": {
+        "lineCount": 360,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 0
+      },
+      "src/services/enhancedAuthService.v2.js": {
+        "lineCount": 785,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/services/pdfReportService.js": {
+        "lineCount": 636,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 3
+      },
+      "src/services/reportDatabaseService.js": {
+        "lineCount": 528,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 1
+      },
+      "src/utils/dataTemplates.js": {
+        "lineCount": 592,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 0
+      },
+      "src/utils/logger.js": {
+        "lineCount": 505,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/utils/memoryManager.js": {
+        "lineCount": 500,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 1
+      },
+      "src/utils/monitoring.js": {
+        "lineCount": 648,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 2
+      },
+      "src/utils/rackUtils.js": {
+        "lineCount": 209,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 1
+      },
+      "src/utils/security.js": {
+        "lineCount": 430,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 0
+      },
+      "src/utils/settings.js": {
+        "lineCount": 278,
+        "hasUseEffect": false,
+        "hasUseState": false,
+        "hasUseContext": false,
+        "hasMemoization": false,
+        "hasComplexLogic": true,
+        "hasInlineObjects": true,
+        "hasEventHandlers": false,
+        "importsCount": 0
+      },
+      "summary": {
+        "totalComponents": 60,
+        "largeComponents": 37,
+        "componentsWithoutMemo": 49,
+        "averageSize": 385
+      }
+    },
+    "contextAnalysis": {
+      "src/context/AppContext.jsx": {
+        "hasLargeInitialState": true,
+        "stateComplexity": 143,
+        "hasDebouncing": true,
+        "hasMemorization": true,
+        "frequentUpdates": false,
+        "issues": [
+          "Extremely large initial state (>100 lines)"
+        ]
+      }
+    },
+    "bundleEstimation": {
+      "totalDependencies": 57,
+      "productionDependencies": 16,
+      "heavyDependencies": [],
+      "estimatedTotalSize": "~1535KB",
+      "potentiallyUnusedDeps": []
+    },
+    "sccmProcessing": {
+      "functionLength": 163,
+      "hasPerformanceOptimizations": false,
+      "hasErrorHandling": true,
+      "usesRegex": true,
+      "hasComplexLogic": true,
+      "hasDebugging": true
+    }
+  },
+  "summary": {
+    "totalIssues": 145,
+    "highPriorityIssues": 1,
+    "recommendations": 3,
+    "componentsAnalyzed": 60
+  }
+}

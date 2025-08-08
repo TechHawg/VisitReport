@@ -1,0 +1,138 @@
+{
+  "timestamp": "2025-08-06T22:55:55.191Z",
+  "summary": {
+    "totalTestDuration": 14,
+    "testsRun": 6,
+    "serverUrl": "http://localhost:5173",
+    "timestamp": "2025-08-06T22:56:09.398Z",
+    "recommendations": 4
+  },
+  "loadPerformance": {
+    "startup": {
+      "iterations": 10,
+      "avgLoadTime": 711,
+      "minLoadTime": 631,
+      "maxLoadTime": 782,
+      "p50": 709,
+      "p95": 782,
+      "p99": 782,
+      "navigationMetrics": {
+        "avgDomContentLoaded": 96,
+        "avgLoadComplete": 97
+      }
+    }
+  },
+  "memoryUsage": {
+    "leakDetection": {
+      "initialMemoryMB": null,
+      "finalMemoryMB": null,
+      "memoryGrowthMB": null,
+      "iterations": 20,
+      "snapshots": [
+        {
+          "iteration": 0,
+          "usedMemoryMB": null
+        },
+        {
+          "iteration": 1,
+          "usedMemoryMB": null
+        },
+        {
+          "iteration": 6,
+          "usedMemoryMB": null
+        },
+        {
+          "iteration": 11,
+          "usedMemoryMB": null
+        },
+        {
+          "iteration": 16,
+          "usedMemoryMB": null
+        }
+      ],
+      "possibleLeak": false
+    }
+  },
+  "componentPerformance": {
+    "rendering": {}
+  },
+  "dataProcessing": {},
+  "lighthouseAudit": {
+    "coreWebVitals": {
+      "firstContentfulPaint": 108,
+      "largestContentfulPaint": 0,
+      "timeToFirstByte": 2,
+      "cumulativeLayoutShift": 0,
+      "firstInputDelay": 0
+    }
+  },
+  "bundleAnalysis": {
+    "resources": {
+      "totalResources": 45,
+      "totalSizeKB": 3496,
+      "avgLoadTime": 13,
+      "largestJSFiles": [
+        {
+          "name": "enhancedAuthService.v2.js",
+          "size": 22389,
+          "loadTime": 22
+        },
+        {
+          "name": "apiClient.js",
+          "size": 11219,
+          "loadTime": 10
+        },
+        {
+          "name": "security.js",
+          "size": 10433,
+          "loadTime": 8
+        },
+        {
+          "name": "emailConfig.js",
+          "size": 973,
+          "loadTime": 14
+        }
+      ],
+      "largestCSSFiles": [
+        {
+          "name": "index.css",
+          "size": 61003,
+          "loadTime": 7
+        }
+      ],
+      "jsFileCount": 4,
+      "cssFileCount": 1
+    }
+  },
+  "browserCompatibility": {},
+  "recommendations": [
+    {
+      "category": "Bundle Optimization",
+      "priority": "MEDIUM",
+      "issue": "Large bundle size (3496KB)",
+      "recommendation": "Implement tree shaking, code splitting, and consider removing unused dependencies",
+      "impact": "Faster initial load times"
+    },
+    {
+      "category": "General Optimization",
+      "priority": "MEDIUM",
+      "issue": "Large initial React context state",
+      "recommendation": "Consider splitting context into smaller, focused contexts to prevent unnecessary re-renders",
+      "impact": "Improved component rendering performance"
+    },
+    {
+      "category": "General Optimization",
+      "priority": "LOW",
+      "issue": "Development debugging logs in production code",
+      "recommendation": "Implement conditional logging and remove console statements from production builds",
+      "impact": "Cleaner console and slight performance improvement"
+    },
+    {
+      "category": "Data Management",
+      "priority": "MEDIUM",
+      "issue": "Frequent localStorage operations",
+      "recommendation": "Implement debouncing for localStorage saves and consider IndexedDB for large data",
+      "impact": "Reduced I/O blocking and better performance"
+    }
+  ]
+}

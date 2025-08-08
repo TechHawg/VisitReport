@@ -77,8 +77,16 @@ const DeviceModal = ({
         </div>
       </div>
 
-      {/* Physical Location */}
+      {/* Physical Location and Asset Tag */}
       <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Device ID
+          </label>
+          <div className="text-sm text-gray-900 dark:text-white font-mono">
+            {device.assetTag || 'NA'}
+          </div>
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Rack Position
@@ -228,8 +236,9 @@ const DeviceModal = ({
         </div>
       )}
 
-      {/* Power Output Connections (for PDUs and UPS devices providing power) */}
-      {(['pdu', 'ups'].includes(device.type?.toLowerCase()) && allDevices.length > 0) && (() => {
+      {/* Power Structure Information (for PDUs and UPS devices) */}
+      {(device && device.type && ['pdu', 'ups'].includes(device.type.toLowerCase())) && (() => {
+        // Get all connected devices with their port assignments
         const connectedDevices = allDevices.filter(d => 
           (d.pduPorts || []).some(port => port.pduId === String(device.id))
         ).map(d => ({
@@ -237,45 +246,160 @@ const DeviceModal = ({
           outlets: (d.pduPorts || []).filter(port => port.pduId === String(device.id))
         }));
 
-        return connectedDevices.length > 0 ? (
+        // Determine total ports (assume 8, 16, 24, or 48 based on device type or connections)
+        const usedPorts = connectedDevices.flatMap(d => d.outlets.map(o => parseInt(o.portNumber))).filter(p => !isNaN(p));
+        const maxUsedPort = usedPorts.length > 0 ? Math.max(...usedPorts) : 0;
+        
+        // Estimate total ports based on device type and usage
+        let totalPorts = 8; // Default
+        if (device.type && device.type.toLowerCase() === 'ups') {
+          totalPorts = Math.max(8, Math.ceil(maxUsedPort / 4) * 4); // UPS typically 4, 8, 12 ports
+        } else if (device.type && device.type.toLowerCase() === 'pdu') {
+          if (maxUsedPort > 24) totalPorts = 48;
+          else if (maxUsedPort > 16) totalPorts = 24;
+          else if (maxUsedPort > 8) totalPorts = 16;
+          else totalPorts = Math.max(8, maxUsedPort);
+        }
+        
+        // If device has explicit port count, use that
+        if (device.portCount) totalPorts = device.portCount;
+        if (device.outlets) totalPorts = device.outlets;
+        if (device.ports) totalPorts = device.ports;
+
+        // Create port structure array
+        const portStructure = Array.from({length: totalPorts}, (_, index) => {
+          const portNumber = index + 1;
+          const connectedDevice = connectedDevices.find(d => 
+            d.outlets.some(o => parseInt(o.portNumber) === portNumber)
+          );
+          const portInfo = connectedDevice?.outlets.find(o => parseInt(o.portNumber) === portNumber);
+          
+          return {
+            portNumber,
+            isUsed: !!connectedDevice,
+            device: connectedDevice,
+            portInfo: portInfo
+          };
+        });
+
+        return (
           <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg">
             <h4 className="font-semibold mb-3 text-gray-900 dark:text-white flex items-center space-x-2">
               <Power size={16} className="text-orange-600" />
-              <span>Power Output Mapping</span>
+              <span>Power Structure Overview</span>
             </h4>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Devices receiving power from this {device.type?.toUpperCase()}
+            
+            {/* Summary Statistics */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-orange-200 dark:border-orange-700">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Total Ports</div>
+                <div className="text-lg font-bold text-gray-900 dark:text-white">{totalPorts}</div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-green-200 dark:border-green-700">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Used Ports</div>
+                <div className="text-lg font-bold text-green-700 dark:text-green-300">{usedPorts.length}</div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Available</div>
+                <div className="text-lg font-bold text-gray-700 dark:text-gray-300">{totalPorts - usedPorts.length}</div>
+              </div>
             </div>
-            <div className="space-y-3">
-              {connectedDevices.map((connectedDevice, index) => (
-                <div key={connectedDevice.id || index} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {connectedDevice.name} ({connectedDevice.type})
-                    </span>
-                    <span className="text-xs bg-orange-100 dark:bg-orange-800 px-2 py-1 rounded text-orange-700 dark:text-orange-300">
-                      {connectedDevice.outlets.length} connection{connectedDevice.outlets.length !== 1 ? 's' : ''}
-                    </span>
+
+            {/* Port Grid Layout */}
+            <div className="mb-4">
+              <h5 className="font-medium text-gray-900 dark:text-white mb-2">Port Layout</h5>
+              <div className="grid grid-cols-8 gap-2 max-h-64 overflow-y-auto">
+                {portStructure.map((port, index) => (
+                  <div 
+                    key={index}
+                    className={`
+                      relative p-2 text-center rounded border text-xs font-medium transition-all
+                      ${port.isUsed 
+                        ? 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:border-green-600 dark:text-green-300' 
+                        : 'bg-gray-100 border-gray-300 text-gray-600 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400'
+                      }
+                    `}
+                    title={port.isUsed ? `Port ${port.portNumber}: ${port.device?.name}` : `Port ${port.portNumber}: Available`}
+                  >
+                    <div className="font-bold">{port.portNumber}</div>
+                    {port.isUsed && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full mx-auto mt-1"></div>
+                    )}
                   </div>
-                  <div className="space-y-2">
-                    {connectedDevice.outlets.map((outlet, outletIndex) => (
-                      <div key={outletIndex} className="text-sm bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                        <span className="text-gray-600 dark:text-gray-400">Port:</span>
-                        <span className="ml-2 text-gray-900 dark:text-white">{outlet.portNumber}</span>
-                        {outlet.voltage && (
-                          <>
-                            <span className="ml-4 text-gray-600 dark:text-gray-400">Voltage:</span>
-                            <span className="ml-2 text-gray-900 dark:text-white">{outlet.voltage}V</span>
-                          </>
-                        )}
+                ))}
+              </div>
+            </div>
+
+            {/* Connected Devices Details */}
+            {connectedDevices.length > 0 && (
+              <div>
+                <h5 className="font-medium text-gray-900 dark:text-white mb-3 flex items-center space-x-2">
+                  <span>Connected Devices ({connectedDevices.length})</span>
+                </h5>
+                <div className="space-y-3">
+                  {connectedDevices.map((connectedDevice, index) => (
+                    <div key={connectedDevice.id || index} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-orange-200 dark:border-orange-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {connectedDevice.name}
+                          </span>
+                          <span className="text-xs bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded text-blue-700 dark:text-blue-300">
+                            {connectedDevice.type}
+                          </span>
+                        </div>
+                        <span className="text-xs bg-orange-100 dark:bg-orange-800 px-2 py-1 rounded text-orange-700 dark:text-orange-300">
+                          {connectedDevice.outlets.length} port{connectedDevice.outlets.length !== 1 ? 's' : ''}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      
+                      {/* Device specs if available */}
+                      {(connectedDevice.powerConsumption || connectedDevice.model) && (
+                        <div className="mb-2 text-xs text-gray-600 dark:text-gray-400 flex space-x-4">
+                          {connectedDevice.model && (
+                            <span>Model: {connectedDevice.model}</span>
+                          )}
+                          {connectedDevice.powerConsumption && (
+                            <span>Power: {connectedDevice.powerConsumption}W</span>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {connectedDevice.outlets.map((outlet, outletIndex) => (
+                          <div key={outletIndex} className="inline-flex items-center space-x-2 text-sm bg-gray-50 dark:bg-gray-700 px-3 py-1 rounded-full">
+                            <Power size={12} className="text-green-500" />
+                            <span className="text-gray-900 dark:text-white font-medium">Port {outlet.portNumber}</span>
+                            {outlet.voltage && (
+                              <span className="text-gray-600 dark:text-gray-400">({outlet.voltage}V)</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Location info if available */}
+                      {(connectedDevice.startUnit || connectedDevice.rackPosition) && (
+                        <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                          Rack Position: Unit {connectedDevice.startUnit || connectedDevice.rackPosition}
+                          {connectedDevice.unitSpan > 1 && ` (${connectedDevice.unitSpan}U)`}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            
+            {/* Show message if no devices connected */}
+            {connectedDevices.length === 0 && (
+              <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                <Power size={32} className="mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No devices connected to this {device.type ? device.type.toUpperCase() : 'device'}</p>
+                <p className="text-xs mt-1">All {totalPorts} ports are available</p>
+              </div>
+            )}
           </div>
-        ) : null;
+        );
       })()}
 
       {/* Network/Data Connections */}

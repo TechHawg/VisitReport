@@ -1,0 +1,132 @@
+
+RSS Visit Report - Admin Login Debug Report
+==========================================
+Generated: 2025-08-08T18:05:18.929Z
+
+TEST RESULTS:
+- Navigation to app: ✅ SUCCESS
+- Login form detection: ✅ SUCCESS
+- Admin login attempt: ✅ SUCCESS
+
+AUTHENTICATION SERVICE LOGS:
+[2025-08-08T18:04:05.626Z] log: Demo mode: Cleared all authentication state
+[2025-08-08T18:05:00.865Z] log: Admin demo credentials validated, proceeding with admin demo login
+[2025-08-08T18:05:00.867Z] log: 🔍 Page Dashboard: Testing enterprise auth...
+[2025-08-08T18:05:00.868Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.869Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.869Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.869Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.870Z] log: 🔍 Page Checklists: Testing enterprise auth...
+[2025-08-08T18:05:00.871Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.871Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.871Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.873Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.873Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.873Z] log: 🔍 Page Summary: Testing enterprise auth...
+[2025-08-08T18:05:00.874Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.875Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.875Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.875Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.876Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.877Z] log: 🔍 Page Infrastructure: Testing enterprise auth...
+[2025-08-08T18:05:00.877Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.877Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.878Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.878Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.878Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.879Z] log: 🔍 Page Inventory: Testing enterprise auth...
+[2025-08-08T18:05:00.879Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.879Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.879Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.880Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.880Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.880Z] log: 🔍 Page Storage: Testing enterprise auth...
+[2025-08-08T18:05:00.881Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.882Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.882Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.883Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.883Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.883Z] log: 🔍 Page IssuesActions: Testing enterprise auth...
+[2025-08-08T18:05:00.884Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.884Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.885Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.885Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.885Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.885Z] log: 🔍 Page ImportExport: Testing enterprise auth...
+[2025-08-08T18:05:00.886Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.886Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.886Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.886Z] log: 🔍 Page Admin: Auth functions available - hasRole: true, hasPermission: true, user role: admin
+[2025-08-08T18:05:00.887Z] log: 🔍 Page Admin: Testing enterprise auth...
+[2025-08-08T18:05:00.888Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.888Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.888Z] log: 🔍 Page Admin: Role check admin = false
+[2025-08-08T18:05:00.888Z] log: 🔍 Page Admin: Has required role = false
+[2025-08-08T18:05:00.888Z] log: 🔍 Page Admin: DENIED - No required role
+[2025-08-08T18:05:00.888Z] log: 🔍 Page Dashboard: Testing enterprise auth...
+[2025-08-08T18:05:00.889Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.889Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.889Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.889Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.890Z] log: 🔍 Page Checklists: Testing enterprise auth...
+[2025-08-08T18:05:00.891Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.891Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.892Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.893Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.893Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.894Z] log: 🔍 Page Summary: Testing enterprise auth...
+[2025-08-08T18:05:00.894Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.894Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.895Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.895Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.896Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.896Z] log: 🔍 Page Infrastructure: Testing enterprise auth...
+[2025-08-08T18:05:00.896Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.896Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.897Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.897Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.897Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.898Z] log: 🔍 Page Inventory: Testing enterprise auth...
+[2025-08-08T18:05:00.898Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.898Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.898Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.899Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.899Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.900Z] log: 🔍 Page Storage: Testing enterprise auth...
+[2025-08-08T18:05:00.900Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.900Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.900Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.901Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.902Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.902Z] log: 🔍 Page IssuesActions: Testing enterprise auth...
+[2025-08-08T18:05:00.902Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.903Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.903Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.903Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.904Z] warn: Permission check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.904Z] log: 🔍 Page ImportExport: Testing enterprise auth...
+[2025-08-08T18:05:00.904Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.904Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.905Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.905Z] log: 🔍 Page Admin: Auth functions available - hasRole: true, hasPermission: true, user role: admin
+[2025-08-08T18:05:00.905Z] log: 🔍 Page Admin: Testing enterprise auth...
+[2025-08-08T18:05:00.906Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.907Z] warn: Role check failed, using demo fallback: JSHandle@error
+[2025-08-08T18:05:00.907Z] log: 🔍 Page Admin: Role check admin = false
+[2025-08-08T18:05:00.907Z] log: 🔍 Page Admin: Has required role = false
+[2025-08-08T18:05:00.907Z] log: 🔍 Page Admin: DENIED - No required role
+
+SCREENSHOTS TAKEN:
+- screenshot-01-initial-load-2025-08-08T18-04-05-632Z.png (01-initial-load)
+- screenshot-03-before-credentials-2025-08-08T18-04-29-266Z.png (03-before-credentials)
+- screenshot-04-credentials-filled-2025-08-08T18-04-51-291Z.png (04-credentials-filled)
+- screenshot-05-after-submit-2025-08-08T18-05-00-941Z.png (05-after-submit)
+- screenshot-06-final-state-2025-08-08T18-05-18-216Z.png (06-final-state)
+
+NETWORK REQUESTS (Auth related):
+[2025-08-08T18:04:05.501Z] GET http://localhost:5173/src/components/auth/AuthGuard.jsx
+[2025-08-08T18:04:05.517Z] GET http://localhost:5173/src/components/auth/UserMenu.jsx
+[2025-08-08T18:04:05.518Z] GET http://localhost:5173/src/middleware/authMiddleware.js
+[2025-08-08T18:04:05.520Z] GET http://localhost:5173/src/components/auth/EnhancedLoginForm.jsx
+[2025-08-08T18:04:05.530Z] GET http://localhost:5173/src/services/authService.js
+[2025-08-08T18:04:05.548Z] GET http://localhost:5173/src/services/apiClient.js

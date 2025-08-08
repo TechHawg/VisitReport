@@ -77,7 +77,8 @@ class MemoryManager {
     const autoCleanupEnabled = settings.get('memory.autoCleanupEnabled', true);
     const cleanupIntervalHours = settings.get('memory.cleanupIntervalHours', 24);
     
-    if (autoCleanupEnabled) {
+    // Only enable auto-cleanup in production to prevent dev server conflicts
+    if (autoCleanupEnabled && !import.meta.env.DEV) {
       // Clear existing interval if any
       if (this.cleanupInterval) {
         clearInterval(this.cleanupInterval);
@@ -88,8 +89,8 @@ class MemoryManager {
         this.performCleanup();
       }, cleanupIntervalHours * 60 * 60 * 1000);
       
-      // Perform initial cleanup
-      setTimeout(() => this.performCleanup(), 5000);
+      // Perform initial cleanup after longer delay in production
+      setTimeout(() => this.performCleanup(), 30000);
     }
   }
   

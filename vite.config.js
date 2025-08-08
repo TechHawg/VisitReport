@@ -9,7 +9,7 @@ export default defineConfig(({ command, mode }) => {
   const isProduction = mode === 'production';
 
   // Backend API origin used for proxying in dev. Normalize trailing slash.
-  const apiOrigin = (env.VITE_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
+  const apiOrigin = ((env.VITE_API_URL && typeof env.VITE_API_URL === 'string') ? env.VITE_API_URL : 'http://localhost:3001').replace(/\/+$/, '');
 
   return {
     plugins: [react()],
@@ -30,18 +30,24 @@ export default defineConfig(({ command, mode }) => {
 
     // Development server configuration
     server: {
-      port: parseInt(env.VITE_PORT) || 5173,
+      port: parseInt(env.VITE_PORT || env.PORT) || 5173,
       host: env.VITE_HOST || 'localhost',
       https: env.VITE_HTTPS === 'true',
       open: env.VITE_OPEN === 'true',
 
       // Proxy API to backend to avoid CORS/CSP headaches in development
-      proxy: {
+      proxy: apiOrigin && apiOrigin !== 'http://localhost:3001' ? {
         '/api': {
           target: apiOrigin,
-          changeOrigin: true
+          changeOrigin: true,
+          timeout: 10000,
+          configure: (proxy, options) => {
+            proxy.on('error', (err, req, res) => {
+              console.log('Proxy error:', err.message);
+            });
+          }
         }
-      },
+      } : {},
 
       headers: {
         // Security headers for development

@@ -12,7 +12,7 @@ import PhotoUpload from '../../components/ui/PhotoUpload';
 import { RACK_COLORS } from '../../constants/colors';
 import { useApp } from '../../context/AppContext';
 import { EMAIL_RECIPIENTS } from '../../constants/emailConfig';
-import RackVisualizer from '../../components/ui/RackVisualizer';
+import RackVisualizer from '../../components/rack/RackVisualizer.jsx';
 
 const Storage = () => {
   const { reportData, updateReportData, addNotification } = useApp();
@@ -21,6 +21,7 @@ const Storage = () => {
   const [editingRack, setEditingRack] = useState(null);
   const [editingDevice, setEditingDevice] = useState(null);
   const [selectedRack, setSelectedRack] = useState(null);
+  const [selectedDevice, setSelectedDevice] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(null);
   const [viewingPhotos, setViewingPhotos] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -147,12 +148,24 @@ const Storage = () => {
   };
 
   // Device management functions
+  const getDefaultPortCount = (deviceType) => {
+    switch (deviceType?.toLowerCase()) {
+      case 'pdu':
+        return 12;
+      case 'ups':
+        return 6;
+      default:
+        return 0;
+    }
+  };
+
   const getEmptyDevice = () => ({
     id: Date.now(),
     name: '',
     type: '',
     model: '',
     serialNumber: '',
+    assetTag: '',            // Asset tag field for device identification
     startUnit: '',
     unitSpan: 1,
     status: 'active',
@@ -164,6 +177,9 @@ const Storage = () => {
     nicSwitch: '',           // string (switch name/id)
     nicPort: '',             // string/number
     lastTestDate: '',        // YYYY-MM-DD
+    ports: [],               // Array of port objects for PDUs and UPS devices
+    horizontalPosition: 'left', // 'left', 'center', 'right' for side-by-side placement
+    widthFraction: 1,        // 1 = full width, 0.5 = half width, 0.33 = third width
     lastUpdated: new Date().toISOString().split('T')[0]
   });
 
@@ -212,6 +228,22 @@ const Storage = () => {
     if (!rack) return;
 
     let updatedDevices;
+    
+    // Create ports array for PDUs and UPS devices
+    const portCount = getDefaultPortCount(editingDevice.type);
+    const ports = editingDevice.ports && editingDevice.ports.length > 0 
+      ? editingDevice.ports 
+      : portCount > 0 
+        ? Array.from({ length: portCount }, (_, i) => ({
+            id: i + 1,
+            portNumber: i + 1,
+            label: `Port ${i + 1}`,
+            connected: false,
+            connectedDevice: '',
+            notes: ''
+          }))
+        : [];
+
     const deviceData = {
       id: editingDevice.id,
       name: editingDevice.name,
@@ -233,6 +265,9 @@ const Storage = () => {
       nicSwitch: editingDevice.nicSwitch || '',
       nicPort: editingDevice.nicPort || '',
       lastTestDate: editingDevice.lastTestDate || '',
+      ports: ports, // Add the ports array
+      horizontalPosition: editingDevice.horizontalPosition || 'left',
+      widthFraction: parseFloat(editingDevice.widthFraction) || 1,
       lastUpdated: new Date().toISOString().split('T')[0]
     };
 
@@ -744,6 +779,7 @@ const Storage = () => {
           rackId: rackId
         })}
         onDeviceAdd={addDevice}
+        onDeviceClick={(device) => setSelectedDevice(device)}
         viewMode="detailed"
       />
     );
@@ -1296,14 +1332,30 @@ const Storage = () => {
                               </h5>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {nonRackedDevices.map(device => (
-                                  <div key={device.id} className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-300 dark:border-yellow-700 text-sm">
+                                  <div 
+                                    key={device.id} 
+                                    className="bg-white dark:bg-gray-800 rounded p-3 border border-yellow-300 dark:border-yellow-700 text-sm cursor-pointer hover:bg-yellow-50 dark:hover:bg-yellow-900/10 transition-colors"
+                                    onClick={() => setSelectedDevice(device)}
+                                  >
                                     <div className="flex items-center justify-between mb-2">
                                       <span className="font-medium text-gray-900 dark:text-gray-100">{device.name}</span>
                                       <div className="flex space-x-1">
                                         <Button
                                           size="xs"
                                           variant="outline"
-                                          onClick={() => {
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedDevice(device);
+                                          }}
+                                          title="View Details"
+                                        >
+                                          <Eye size={10} />
+                                        </Button>
+                                        <Button
+                                          size="xs"
+                                          variant="outline"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
                                             const rack = (location.racks || []).find(r => r.devices?.some(d => d.id === device.id));
                                             if (rack) editDevice(location.id, rack.id, device);
                                           }}
@@ -1350,12 +1402,26 @@ const Storage = () => {
                                   return (
                                     <div key={powerDevice.id} className="bg-white dark:bg-gray-800 rounded p-3 border border-blue-300 dark:border-blue-700">
                                       <div className="flex items-center justify-between mb-3">
-                                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                                        <span 
+                                          className="font-medium text-gray-900 dark:text-gray-100 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                          onClick={() => setSelectedDevice(powerDevice)}
+                                          title="Click to view device details"
+                                        >
                                           {powerDevice.name} ({powerDevice.type?.toUpperCase()})
                                         </span>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                                          {connectedDevices.length} connected
-                                        </span>
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {connectedDevices.length} connected
+                                          </span>
+                                          <Button
+                                            size="xs"
+                                            variant="outline"
+                                            onClick={() => setSelectedDevice(powerDevice)}
+                                            title="View Details"
+                                          >
+                                            <Eye size={10} />
+                                          </Button>
+                                        </div>
                                       </div>
                                       {connectedDevices.length > 0 ? (
                                         <div className="space-y-2">
@@ -1593,6 +1659,7 @@ const Storage = () => {
               onChange={(e) => setEditingLocation({ ...editingLocation, description: e.target.value })}
               placeholder="Describe this location..."
               rows={3}
+              spellCheck={true}
             />
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => setEditingLocation(null)}>Cancel</Button>
@@ -1629,6 +1696,7 @@ const Storage = () => {
                 value={editingRack.name}
                 onChange={(e) => setEditingRack({ ...editingRack, name: e.target.value })}
                 placeholder="Rack-1"
+                spellCheck={false}
               />
               <Input
                 label="Height (U)"
@@ -1643,6 +1711,7 @@ const Storage = () => {
               value={editingRack.power}
               onChange={(e) => setEditingRack({ ...editingRack, power: e.target.value })}
               placeholder="5.5 kW"
+              spellCheck={false}
             />
             <Input
               label="Notes"
@@ -1651,6 +1720,7 @@ const Storage = () => {
               onChange={(e) => setEditingRack({ ...editingRack, notes: e.target.value })}
               placeholder="Additional notes about this rack..."
               rows={3}
+              spellCheck={true}
             />
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => setEditingRack(null)}>Cancel</Button>
@@ -1684,6 +1754,7 @@ const Storage = () => {
                 value={editingDevice.name}
                 onChange={(e) => setEditingDevice({ ...editingDevice, name: e.target.value })}
                 placeholder={editingDevice.type === 'patch-panel' ? 'Patch Panel A' : 'Server-01, Switch-Main'}
+                spellCheck={false}
               />
               <Select
                 label="Device Type"
@@ -1698,18 +1769,27 @@ const Storage = () => {
             </div>
 
             {editingDevice.type !== 'patch-panel' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input
                   label="Model"
                   value={editingDevice.model}
                   onChange={(e) => setEditingDevice({ ...editingDevice, model: e.target.value })}
                   placeholder="Dell PowerEdge R730"
+                  spellCheck={false}
                 />
                 <Input
                   label="Serial Number"
                   value={editingDevice.serialNumber}
                   onChange={(e) => setEditingDevice({ ...editingDevice, serialNumber: e.target.value })}
                   placeholder="ABC123DEF456"
+                  spellCheck={false}
+                />
+                <Input
+                  label="Asset Tag"
+                  value={editingDevice.assetTag}
+                  onChange={(e) => setEditingDevice({ ...editingDevice, assetTag: e.target.value })}
+                  placeholder="IT-2024-001"
+                  spellCheck={false}
                 />
               </div>
             )}
@@ -1763,6 +1843,38 @@ const Storage = () => {
                 <option value="retired">Retired</option>
               </Select>
             </div>
+
+            {/* Horizontal positioning for side-by-side placement */}
+            {!editingDevice.isNotRacked && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-3">Horizontal Positioning (Side-by-Side)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Select
+                    label="Device Width"
+                    value={editingDevice.widthFraction}
+                    onChange={(e) => setEditingDevice({ ...editingDevice, widthFraction: parseFloat(e.target.value) })}
+                  >
+                    <option value="1">Full Width (1/1)</option>
+                    <option value="0.5">Half Width (1/2)</option>
+                    <option value="0.33">Third Width (1/3)</option>
+                  </Select>
+                  <Select
+                    label="Position"
+                    value={editingDevice.horizontalPosition}
+                    onChange={(e) => setEditingDevice({ ...editingDevice, horizontalPosition: e.target.value })}
+                    disabled={parseFloat(editingDevice.widthFraction) >= 1}
+                  >
+                    <option value="left">Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </Select>
+                </div>
+                <div className="mt-2 text-xs text-blue-700 dark:text-blue-300">
+                  <strong>Note:</strong> This allows multiple devices to be placed side-by-side in the same rack units. 
+                  Other devices can occupy the remaining space in the same units.
+                </div>
+              </div>
+            )}
 
             {/* Power connections based on device type */}
             {/* PDU - shows "Add UPS Outlet" */}
@@ -1909,10 +2021,18 @@ const Storage = () => {
             {(['switch','top-level','sd-wan','camera-server'].includes(editingDevice.type)) && (
               <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100">PDU Power Connections</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                    PDU Power Connections
+                    {editingDevice.type === 'switch' && (
+                      <span className="text-sm font-normal text-gray-600 dark:text-gray-400 ml-2">
+                        (up to 3 connections)
+                      </span>
+                    )}
+                  </h4>
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={editingDevice.type === 'switch' && (editingDevice.pduPorts || []).length >= 3}
                     onClick={() => {
                       const next = [...(editingDevice.pduPorts || [])];
                       next.push({ pduId: '', outlet: '', type: 'pdu' });
@@ -1920,6 +2040,7 @@ const Storage = () => {
                     }}
                   >
                     Add PDU Port
+                    {editingDevice.type === 'switch' && ` (${(editingDevice.pduPorts || []).length}/3)`}
                   </Button>
                 </div>
                 {(editingDevice.pduPorts || []).length === 0 && (
@@ -1987,12 +2108,14 @@ const Storage = () => {
                       value={editingDevice.nicSwitch || ''}
                       onChange={(e) => setEditingDevice({ ...editingDevice, nicSwitch: e.target.value })}
                       placeholder="Switch name or ID"
+                      spellCheck={false}
                     />
                     <Input
                       label="Port Number"
                       value={editingDevice.nicPort || ''}
                       onChange={(e) => setEditingDevice({ ...editingDevice, nicPort: e.target.value })}
                       placeholder="e.g., 12"
+                      spellCheck={false}
                     />
                     <Input
                       label="Last Test Date"
@@ -2012,6 +2135,7 @@ const Storage = () => {
               onChange={(e) => setEditingDevice({ ...editingDevice, notes: e.target.value })}
               placeholder="Additional notes about this device..."
               rows={3}
+              spellCheck={true}
             />
             <div className="flex justify-end space-x-3">
               <Button variant="outline" onClick={() => setEditingDevice(null)}>Cancel</Button>
@@ -2210,6 +2334,300 @@ Rack-003,Storage Room,18,2kW,Storage array rack`);
           </div>
         </div>
       </Modal>
+
+      {/* Device Detail Modal */}
+      {selectedDevice && (
+        <Modal
+          isOpen={!!selectedDevice}
+          onClose={() => setSelectedDevice(null)}
+          title={`Device Details: ${selectedDevice.name}`}
+          size="xl"
+        >
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Basic Information</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Name:</span>
+                    <span className="text-sm font-medium">{selectedDevice.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Type:</span>
+                    <span className="text-sm font-medium capitalize">{selectedDevice.type || 'Unknown'}</span>
+                  </div>
+                  {selectedDevice.model && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Model:</span>
+                      <span className="text-sm font-medium">{selectedDevice.model}</span>
+                    </div>
+                  )}
+                  {selectedDevice.serialNumber && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Serial Number:</span>
+                      <span className="text-sm font-medium">{selectedDevice.serialNumber}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Status:</span>
+                    <span className={`text-sm font-medium capitalize ${selectedDevice.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                      {selectedDevice.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Physical Location</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Is Racked:</span>
+                    <span className="text-sm font-medium">{selectedDevice.isNotRacked ? 'No' : 'Yes'}</span>
+                  </div>
+                  {!selectedDevice.isNotRacked && selectedDevice.startUnit && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Rack Position:</span>
+                      <span className="text-sm font-medium">Units {selectedDevice.startUnit}-{selectedDevice.startUnit + (selectedDevice.unitSpan || 1) - 1}</span>
+                    </div>
+                  )}
+                  {selectedDevice.unitSpan && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Unit Span:</span>
+                      <span className="text-sm font-medium">{selectedDevice.unitSpan}U</span>
+                    </div>
+                  )}
+                  {selectedDevice.lastTestDate && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Last Tested:</span>
+                      <span className="text-sm font-medium">{selectedDevice.lastTestDate}</span>
+                    </div>
+                  )}
+                  {selectedDevice.widthFraction && selectedDevice.widthFraction < 1 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Positioning:</span>
+                      <span className="text-sm font-medium">
+                        {selectedDevice.widthFraction === 0.5 ? 'Half Width' : 
+                         selectedDevice.widthFraction === 0.33 ? 'Third Width' : 
+                         `${Math.round(selectedDevice.widthFraction * 100)}% Width`}
+                        {' - '}
+                        {selectedDevice.horizontalPosition === 'left' ? 'Left Side' : 
+                         selectedDevice.horizontalPosition === 'center' ? 'Center' : 
+                         'Right Side'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Power Connections */}
+            {selectedDevice.pduPorts && selectedDevice.pduPorts.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Power Connections</h4>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                  <div className="space-y-2">
+                    {selectedDevice.pduPorts.map((port, idx) => (
+                      <div key={idx} className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {port.type?.toUpperCase()} Connection:
+                        </span>
+                        <span className="text-sm font-medium">
+                          {port.pduId ? `Device ID: ${port.pduId}` : 'Not specified'} - Outlet {port.outlet || 'N/A'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Network Connections */}
+            {selectedDevice.hasNicCard && (
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Network Connection</h4>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Has NIC Card:</span>
+                      <span className="text-sm font-medium">Yes</span>
+                    </div>
+                    {selectedDevice.nicSwitch && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Connected Switch:</span>
+                        <span className="text-sm font-medium">{selectedDevice.nicSwitch}</span>
+                      </div>
+                    )}
+                    {selectedDevice.nicPort && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Switch Port:</span>
+                        <span className="text-sm font-medium">{selectedDevice.nicPort}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Power Mapping - Show devices connected to this PDU/UPS */}
+            {(selectedDevice.type === 'pdu' || selectedDevice.type === 'ups') && (() => {
+              // Find all devices connected to this power device
+              const connectedDevices = (dataClosetData.locations || []).flatMap(location =>
+                (location.racks || []).flatMap(rack =>
+                  (rack.devices || []).filter(device =>
+                    (device.pduPorts || []).some(port => 
+                      String(port.pduId) === String(selectedDevice.id)
+                    )
+                  ).map(device => ({
+                    ...device,
+                    connections: (device.pduPorts || []).filter(port => 
+                      String(port.pduId) === String(selectedDevice.id)
+                    ),
+                    locationName: location.name,
+                    rackName: rack.name
+                  }))
+                )
+              );
+
+              // Create port usage map
+              const portUsageMap = {};
+              connectedDevices.forEach(device => {
+                device.connections.forEach(conn => {
+                  if (conn.outlet) {
+                    if (!portUsageMap[conn.outlet]) {
+                      portUsageMap[conn.outlet] = [];
+                    }
+                    portUsageMap[conn.outlet].push({
+                      deviceName: device.name,
+                      deviceType: device.type,
+                      location: device.locationName,
+                      rack: device.rackName
+                    });
+                  }
+                });
+              });
+
+              return (
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
+                    Power Distribution Mapping ({connectedDevices.length} devices connected)
+                  </h4>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-60 overflow-y-auto">
+                    {selectedDevice.ports && selectedDevice.ports.length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {selectedDevice.ports.map((port, idx) => {
+                          const portNumber = port.portNumber || idx + 1;
+                          const connections = portUsageMap[String(portNumber)] || [];
+                          const isConnected = connections.length > 0;
+                          
+                          return (
+                            <div 
+                              key={port.id || idx} 
+                              className={`p-2 rounded text-xs border ${
+                                isConnected 
+                                  ? 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/20 dark:border-green-700 dark:text-green-200' 
+                                  : 'bg-gray-100 border-gray-300 text-gray-600 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300'
+                              }`}
+                              title={isConnected ? connections.map(c => c.deviceName).join(', ') : 'Available'}
+                            >
+                              <div className="font-medium">Port {portNumber}</div>
+                              {isConnected && (
+                                <div className="mt-1 space-y-1">
+                                  {connections.map((conn, cidx) => (
+                                    <div key={cidx} className="text-xs truncate">
+                                      {conn.deviceName}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {!isConnected && (
+                                <div className="text-xs mt-1 opacity-60">Available</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        No ports configured. {selectedDevice.type?.toUpperCase()} should have {getDefaultPortCount(selectedDevice.type)} ports.
+                      </div>
+                    )}
+
+                    {connectedDevices.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                        <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Connected Devices Detail:</h5>
+                        <div className="space-y-2">
+                          {connectedDevices.map((device, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-xs p-2 bg-white dark:bg-gray-800 rounded">
+                              <div>
+                                <span className="font-medium">{device.name}</span>
+                                <span className="text-gray-500 dark:text-gray-400 ml-2">
+                                  ({device.type})
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  {device.connections.map(c => `Port ${c.outlet}`).join(', ')}
+                                </span>
+                                <div className="text-xs text-gray-400 dark:text-gray-500">
+                                  {device.locationName} / {device.rackName}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Notes */}
+            {selectedDevice.notes && (
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Notes</h4>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">{selectedDevice.notes}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Metadata */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                <span>Device ID: {selectedDevice.id}</span>
+                <span>Last Updated: {selectedDevice.lastUpdated || 'Never'}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setSelectedDevice(null)}>
+                Close
+              </Button>
+              <Button 
+                onClick={() => {
+                  // Find the location and rack for this device to enable editing
+                  const location = (dataClosetData.locations || []).find(loc => 
+                    loc.racks?.some(rack => rack.devices?.some(device => device.id === selectedDevice.id))
+                  );
+                  if (location) {
+                    const rack = location.racks.find(r => r.devices?.some(d => d.id === selectedDevice.id));
+                    if (rack) {
+                      editDevice(location.id, rack.id, selectedDevice);
+                      setSelectedDevice(null);
+                    }
+                  }
+                }}
+              >
+                <Edit size={16} />
+                Edit Device
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

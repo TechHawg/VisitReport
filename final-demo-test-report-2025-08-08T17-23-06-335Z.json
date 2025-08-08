@@ -1,0 +1,23 @@
+{
+  "timestamp": "2025-08-08T17:23:06.335Z",
+  "testSuite": "Final Demo Accounts Test",
+  "application": "RSS Visit Report",
+  "baseUrl": "http://172.29.218.93:5173/",
+  "summary": {
+    "total": 2,
+    "passed": 0,
+    "failed": 2
+  },
+  "results": [
+    {
+      "userType": "demo-user",
+      "success": false,
+      "error": "Login failed"
+    },
+    {
+      "userType": "admin-user",
+      "success": false,
+      "error": "Login failed"
+    }
+  ]
+}

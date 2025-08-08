@@ -13,7 +13,8 @@ class MonitoringService {
     this.performanceEntries = [];
     this.errorCount = 0;
     this.sessionStartTime = Date.now();
-    this.isEnabled = settings.get('security.performanceMonitoring', true);
+    // Disable monitoring in development to prevent server crashes
+    this.isEnabled = settings.get('security.performanceMonitoring', !import.meta.env.DEV);
     
     if (this.isEnabled) {
       this.init();

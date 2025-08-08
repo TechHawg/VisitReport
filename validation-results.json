@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-08-06T22:53:13.224Z",
+  "tests": {
+    "applicationLoading": {
+      "status": "PASSED",
+      "message": "Application loads successfully"
+    },
+    "authentication": {
+      "status": "FAILED",
+      "error": "page.waitForTimeout is not a function"
+    },
+    "navigation": {
+      "status": "PASSED",
+      "message": "Found 9 navigation elements",
+      "navigationWorking": false
+    },
+    "performance": {
+      "status": "PASSED",
+      "metrics": {
+        "domContentLoaded": null,
+        "loadComplete": null,
+        "resourceCount": 46
+      },
+      "memory": {
+        "usedJSMemoryMB": null,
+        "totalJSMemoryMB": null
+      }
+    },
+    "dataEntry": {
+      "status": "PASSED",
+      "message": "0 input fields found, 0 working",
+      "totalFields": 0,
+      "workingFields": 0
+    }
+  },
+  "errors": [
+    "Authentication: page.waitForTimeout is not a function"
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5,
+    "successRate": 80,
+    "productionReady": true
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "testName": "Admin Demo Account Access Test",
+  "timestamp": "2025-08-08T17:16:41.169Z",
+  "testUrl": "http://172.29.218.93:5173/",
+  "credentials": {
+    "username": "admin",
+    "password": "admin123"
+  },
+  "results": {
+    "loginSuccessful": true,
+    "userIdentityVerified": false,
+    "totalTabsFound": 7,
+    "expectedTabsCount": 9,
+    "hasAllExpectedTabs": false,
+    "administrationTabPresent": false,
+    "tabsList": [
+      "Dashboard",
+      "Checklists",
+      "Visit Summary",
+      "IT Infrastructure",
+      "Hardware Inventory",
+      "Data Closet",
+      "Issues & Actions"
+    ],
+    "missingTabs": [
+      "Import/Export",
+      "Administration"
+    ],
+    "extraTabs": []
+  },
+  "screenshots": [
+    "admin-demo-test-2025-08-08T17-16-40-414Z.png"
+  ],
+  "overallResult": "FAIL"
+}
