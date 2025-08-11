@@ -29,7 +29,7 @@ The GitHub Actions workflow will automatically:
 After deployment completes (2-5 minutes), your app will be available at:
 
 ```
-https://YOUR_USERNAME.github.io/RSS_Visit_Report/
+https://YOUR_USERNAME.github.io/VisitReport/
 ```
 
 Replace `YOUR_USERNAME` with your actual GitHub username.

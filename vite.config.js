@@ -10,7 +10,7 @@ export default defineConfig(({ command, mode }) => {
   
   // GitHub Pages base path - update this to match your repository name
   const isGitHubPages = env.VITE_GITHUB_PAGES === 'true';
-  const basePath = isGitHubPages ? '/RSS_Visit_Report/' : '/';
+  const basePath = isGitHubPages ? '/VisitReport/' : '/';
 
   // Backend API origin used for proxying in dev. Normalize trailing slash.
   const apiOrigin = ((env.VITE_API_URL && typeof env.VITE_API_URL === 'string') ? env.VITE_API_URL : 'http://localhost:3001').replace(/\/+$/, '');
