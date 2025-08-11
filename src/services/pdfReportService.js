@@ -1312,12 +1312,16 @@ class PDFReportService {
             const ipAddress = device.ipAddress || device.ip;
             const displayName = ipAddress ? `${deviceName} (${ipAddress})` : deviceName;
             
+            // MAC address info (only show if device has NIC and MAC is provided)
+            const macAddress = (device.hasNicCard && device.macAddress) ? device.macAddress : 'N/A';
+            
             return [
               displayName,
               deviceType,
               deviceModel,
               deviceStatus,
-              positionDisplay
+              positionDisplay,
+              macAddress
             ];
           });
 
@@ -1326,7 +1330,7 @@ class PDFReportService {
           pdf.text(`${deviceData.length} devices configured:`, this.pageMargin + 5, yPos);
           yPos += 6;
           
-          yPos = this.addTable(pdf, deviceData, yPos, ['Device Name', 'Type', 'Model', 'Status', 'Position']);
+          yPos = this.addTable(pdf, deviceData, yPos, ['Device Name', 'Type', 'Model', 'Status', 'Position', 'MAC Address']);
         } else {
           this.applyStyle(pdf, 'body', 'secondary');
           pdf.text('No devices found in this rack', this.pageMargin + 10, yPos);

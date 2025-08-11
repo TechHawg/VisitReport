@@ -3,11 +3,11 @@
  */
 
 export const RACK_CONFIG = {
-  DEFAULT_HEIGHT: 42,
+  DEFAULT_HEIGHT: 45,
   UPS_PORTS: 6,
   PDU_PORTS: 12,
   MIN_UNIT: 1,
-  MAX_UNIT: 42,
+  MAX_UNIT: 45,
   UNIT_HEIGHT_REM: 1.5,
   
   VIEW_MODES: {

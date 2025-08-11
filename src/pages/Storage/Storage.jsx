@@ -264,6 +264,7 @@ const Storage = () => {
       hasNicCard: !!editingDevice.hasNicCard,
       nicSwitch: editingDevice.nicSwitch || '',
       nicPort: editingDevice.nicPort || '',
+      macAddress: editingDevice.macAddress || '',
       lastTestDate: editingDevice.lastTestDate || '',
       ports: ports, // Add the ports array
       horizontalPosition: editingDevice.horizontalPosition || 'left',
@@ -2102,27 +2103,40 @@ const Storage = () => {
                   <span className="text-sm text-gray-900 dark:text-gray-100">NIC Card Installed</span>
                 </label>
                 {editingDevice.hasNicCard && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <Input
-                      label="Switch"
-                      value={editingDevice.nicSwitch || ''}
-                      onChange={(e) => setEditingDevice({ ...editingDevice, nicSwitch: e.target.value })}
-                      placeholder="Switch name or ID"
-                      spellCheck={false}
-                    />
-                    <Input
-                      label="Port Number"
-                      value={editingDevice.nicPort || ''}
-                      onChange={(e) => setEditingDevice({ ...editingDevice, nicPort: e.target.value })}
-                      placeholder="e.g., 12"
-                      spellCheck={false}
-                    />
-                    <Input
-                      label="Last Test Date"
-                      type="date"
-                      value={editingDevice.lastTestDate || ''}
-                      onChange={(e) => setEditingDevice({ ...editingDevice, lastTestDate: e.target.value })}
-                    />
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Input
+                        label="Switch"
+                        value={editingDevice.nicSwitch || ''}
+                        onChange={(e) => setEditingDevice({ ...editingDevice, nicSwitch: e.target.value })}
+                        placeholder="Switch name or ID"
+                        spellCheck={false}
+                      />
+                      <Input
+                        label="Port Number"
+                        value={editingDevice.nicPort || ''}
+                        onChange={(e) => setEditingDevice({ ...editingDevice, nicPort: e.target.value })}
+                        placeholder="e.g., 12"
+                        spellCheck={false}
+                      />
+                      <Input
+                        label="Last Test Date"
+                        type="date"
+                        value={editingDevice.lastTestDate || ''}
+                        onChange={(e) => setEditingDevice({ ...editingDevice, lastTestDate: e.target.value })}
+                      />
+                    </div>
+                    <div className="md:w-1/3">
+                      <Input
+                        label="MAC Address"
+                        value={editingDevice.macAddress || ''}
+                        onChange={(e) => setEditingDevice({ ...editingDevice, macAddress: e.target.value.toUpperCase().replace(/[^0-9A-F:]/g, '') })}
+                        placeholder="00:1B:44:11:3A:B7"
+                        spellCheck={false}
+                        className="font-mono"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Enter MAC address for network identification</p>
+                    </div>
                   </div>
                 )}
               </div>
