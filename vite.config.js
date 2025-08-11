@@ -7,11 +7,16 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const isProduction = mode === 'production';
+  
+  // GitHub Pages base path - update this to match your repository name
+  const isGitHubPages = env.VITE_GITHUB_PAGES === 'true';
+  const basePath = isGitHubPages ? '/RSS_Visit_Report/' : '/';
 
   // Backend API origin used for proxying in dev. Normalize trailing slash.
   const apiOrigin = ((env.VITE_API_URL && typeof env.VITE_API_URL === 'string') ? env.VITE_API_URL : 'http://localhost:3001').replace(/\/+$/, '');
 
   return {
+    base: basePath,
     plugins: [react()],
     root: '.',
     publicDir: 'public',

@@ -98,7 +98,7 @@ const RackVisualizer = ({
   };
 
   return (
-    <div className={getContainerClasses()}>
+    <div className={getContainerClasses()} data-rack-id={rack.id}>
       {/* Rack Header */}
       <RackHeader 
         rack={rack} 
