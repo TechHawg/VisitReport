@@ -1173,10 +1173,24 @@ class PDFReportService {
     let yPos = yPosition;
 
     this.applyStyle(pdf, 'subHeader', 'secondary');
-    pdf.text('Rack Layout:', this.pageMargin, yPos);
+    pdf.text('Rack Layout Diagrams:', this.pageMargin, yPos);
     yPos += 10;
 
-    // Enhanced filtering for rack layout images with multiple criteria
+    // Try to capture live rack visualizer diagrams first
+    const rackDiagrams = await this.captureRackVisualizers(reportData);
+    
+    if (rackDiagrams.length > 0) {
+      this.applyStyle(pdf, 'body', 'textMuted');
+      pdf.text(`Generated ${rackDiagrams.length} rack ${rackDiagrams.length === 1 ? 'diagram' : 'diagrams'}:`, this.pageMargin, yPos);
+      yPos += 8;
+      
+      for (const diagram of rackDiagrams) {
+        yPos = await this.addCapturedImage(pdf, diagram, yPos);
+      }
+      return yPos + 5;
+    }
+
+    // Fallback to uploaded rack layout photos
     const rackLayoutPhotos = (reportData.photos || []).filter(photo => {
       if (!photo) return false;
       
@@ -1204,7 +1218,7 @@ class PDFReportService {
     if (rackLayoutPhotos.length > 0) {
       // Add count indicator for reference
       this.applyStyle(pdf, 'body', 'textMuted');
-      pdf.text(`Found ${rackLayoutPhotos.length} layout ${rackLayoutPhotos.length === 1 ? 'diagram' : 'diagrams'}:`, this.pageMargin, yPos);
+      pdf.text(`Found ${rackLayoutPhotos.length} uploaded ${rackLayoutPhotos.length === 1 ? 'diagram' : 'diagrams'}:`, this.pageMargin, yPos);
       yPos += 8;
       
       for (const photo of rackLayoutPhotos) {
@@ -1212,7 +1226,7 @@ class PDFReportService {
       }
     } else {
       this.applyStyle(pdf, 'body', 'secondary');
-      pdf.text('No rack layout images available', this.pageMargin, yPos);
+      pdf.text('No rack layout diagrams found. Please ensure rack visualizers are visible when generating the report.', this.pageMargin, yPos);
       yPos += 15;
     }
 
@@ -1259,12 +1273,60 @@ class PDFReportService {
         yPos = await this.addPhoto(pdf, photo, yPos);
       }
     } else {
-      this.applyStyle(pdf, 'body', 'secondary');
-      pdf.text('No power outlet mapping images available', this.pageMargin, yPos);
-      yPos += 15;
+      // Generate power outlet mapping table from rack data
+      yPos = this.addPowerOutletTable(pdf, reportData, yPos);
     }
 
     return yPos + 5;
+  }
+
+  /**
+   * Generate power outlet mapping table from device data
+   */
+  addPowerOutletTable(pdf, reportData, yPosition) {
+    let yPos = yPosition;
+
+    // Collect power information from racks and devices
+    const powerMappings = [];
+
+    if (reportData.racks && reportData.racks.length > 0) {
+      reportData.racks.forEach((rack, rackIndex) => {
+        const rackName = rack.name || `Rack ${rackIndex + 1}`;
+        
+        if (rack.devices && rack.devices.length > 0) {
+          rack.devices.forEach(device => {
+            if (device.type && ['ups', 'pdu', 'server', 'switch', 'router'].includes(device.type.toLowerCase())) {
+              const deviceName = device.name || 'Unknown Device';
+              const deviceType = device.type || 'N/A';
+              const position = device.startUnit ? `U${device.startUnit}` : 'N/A';
+              const powerInfo = device.powerConsumption ? `${device.powerConsumption}W` : 'N/A';
+              
+              powerMappings.push([
+                rackName,
+                deviceName,
+                deviceType,
+                position,
+                powerInfo
+              ]);
+            }
+          });
+        }
+      });
+    }
+
+    if (powerMappings.length > 0) {
+      this.applyStyle(pdf, 'body', 'textMuted');
+      pdf.text(`Generated power mapping table with ${powerMappings.length} power-related devices:`, this.pageMargin, yPos);
+      yPos += 8;
+      
+      yPos = this.addTable(pdf, powerMappings, yPos, ['Rack', 'Device', 'Type', 'Position', 'Power']);
+    } else {
+      this.applyStyle(pdf, 'body', 'secondary');
+      pdf.text('No power outlet mapping data or images available', this.pageMargin, yPos);
+      yPos += 15;
+    }
+
+    return yPos;
   }
 
   /**
@@ -1292,14 +1354,14 @@ class PDFReportService {
         if (rack.devices && rack.devices.length > 0) {
           // Sort devices by position if available - Enhanced with better parsing
           const sortedDevices = [...rack.devices].sort((a, b) => {
-            const posA = this.parsePosition(a.position || a.rackPosition || a.uPosition || 0);
-            const posB = this.parsePosition(b.position || b.rackPosition || b.uPosition || 0);
+            const posA = this.parsePosition(a.startUnit || a.position || a.rackPosition || a.uPosition || 0);
+            const posB = this.parsePosition(b.startUnit || b.position || b.rackPosition || b.uPosition || 0);
             return posB - posA; // Top to bottom (higher U positions first)
           });
 
           const deviceData = sortedDevices.map(device => {
-            // Enhanced position display with better formatting
-            const position = device.position || device.rackPosition || device.uPosition || 'N/A';
+            // Enhanced position display with better formatting - check startUnit first
+            const position = device.startUnit || device.position || device.rackPosition || device.uPosition || 'N/A';
             const positionDisplay = position !== 'N/A' && position !== 0 ? `U${this.parsePosition(position)}` : 'N/A';
             
             // Enhanced device identification
@@ -3583,6 +3645,108 @@ class PDFReportService {
     
     // Reset colors
     pdf.setTextColor(...this.colors.text);
+  }
+
+  /**
+   * Capture rack visualizer diagrams from the DOM
+   */
+  async captureRackVisualizers(reportData) {
+    const rackDiagrams = [];
+    
+    try {
+      // Try to find rack visualizer elements in the DOM
+      const rackElements = document.querySelectorAll('[data-rack-id]');
+      
+      if (rackElements.length === 0) {
+        console.log('No rack visualizer elements found in DOM');
+        return rackDiagrams;
+      }
+
+      // Import html2canvas dynamically
+      const html2canvas = (await import('html2canvas')).default;
+      
+      for (const element of rackElements) {
+        try {
+          const rackId = element.getAttribute('data-rack-id');
+          const canvas = await html2canvas(element, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            foreignObjectRendering: false,
+            height: element.scrollHeight,
+            width: element.scrollWidth
+          });
+          
+          rackDiagrams.push({
+            dataUrl: canvas.toDataURL('image/png'),
+            title: `Rack Layout - ${rackId}`,
+            width: canvas.width,
+            height: canvas.height
+          });
+        } catch (error) {
+          console.warn(`Failed to capture rack diagram for element:`, error);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to capture rack visualizers:', error);
+    }
+    
+    return rackDiagrams;
+  }
+
+  /**
+   * Add a captured image to the PDF
+   */
+  async addCapturedImage(pdf, diagram, yPosition) {
+    let yPos = yPosition;
+    
+    try {
+      const maxWidth = this.pageWidth - (this.pageMargin * 2);
+      const maxHeight = 150;
+      
+      // Calculate scaling to fit within constraints
+      let width = diagram.width;
+      let height = diagram.height;
+      
+      // Scale down if too wide
+      if (width > maxWidth) {
+        const scale = maxWidth / width;
+        width = maxWidth;
+        height = height * scale;
+      }
+      
+      // Scale down if too tall
+      if (height > maxHeight) {
+        const scale = maxHeight / height;
+        height = maxHeight;
+        width = width * scale;
+      }
+
+      // Check if we need a page break
+      yPos = this.checkPageBreak(pdf, yPos, height + 20);
+
+      // Add the image
+      pdf.addImage(diagram.dataUrl, 'PNG', this.pageMargin, yPos, width, height);
+      yPos += height + 5;
+
+      // Add caption
+      if (diagram.title) {
+        this.applyStyle(pdf, 'caption', 'textMuted');
+        pdf.text(diagram.title, this.pageMargin, yPos);
+        yPos += 8;
+      }
+      
+    } catch (error) {
+      console.warn('Failed to add captured diagram to PDF:', error);
+      
+      // Add error placeholder
+      this.applyStyle(pdf, 'body', 'warning');
+      pdf.text(`Failed to add rack diagram: ${diagram.title || 'Unknown'}`, this.pageMargin, yPos);
+      yPos += 15;
+    }
+
+    return yPos + 10;
   }
 }
 
