@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, MapPin, Users, Plus, Edit, Trash2, Save, X, CheckSquare, Upload, Eye, EyeOff, Type, GripVertical, ChevronUp, ChevronDown, Maximize2, Minimize2, Copy } from 'lucide-react';
+import { Settings, MapPin, Users, Plus, Edit, Trash2, Save, X, CheckSquare, Upload, Eye, EyeOff, Type, GripVertical, ChevronUp, ChevronDown, Maximize2, Minimize2, Copy, Shield, UserCheck, UserX, Key } from 'lucide-react';
 import Section from '../../components/ui/Section';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -24,9 +24,35 @@ const Admin = () => {
   const [offices, setOffices] = useState(() => loadData('rss_offices', []));
   const [technicians, setTechnicians] = useState(() => loadData('rss_technicians', []));
   const [checklistTemplates, setChecklistTemplates] = useState(() => loadData('rss_checklist_templates', []));
+  const [users, setUsers] = useState(() => loadData('rss_users', [
+    // Default demo users for reference
+    {
+      id: 'demo-user-1',
+      username: 'demo',
+      email: 'demo@rssreport.com',
+      displayName: 'Demo User',
+      role: 'technician',
+      isActive: true,
+      isDemo: true,
+      createdAt: '2024-01-01T00:00:00Z',
+      lastLogin: null
+    },
+    {
+      id: 'admin-user-1', 
+      username: 'admin',
+      email: 'admin@rssreport.com',
+      displayName: 'Admin User',
+      role: 'admin',
+      isActive: true,
+      isDemo: true,
+      createdAt: '2024-01-01T00:00:00Z',
+      lastLogin: null
+    }
+  ]));
   const [editingOffice, setEditingOffice] = useState(null);
   const [editingTechnician, setEditingTechnician] = useState(null);
   const [editingTemplate, setEditingTemplate] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(null);
 
   // Save data to localStorage whenever it changes
@@ -41,6 +67,10 @@ const Admin = () => {
   useEffect(() => {
     localStorage.setItem('rss_checklist_templates', JSON.stringify(checklistTemplates));
   }, [checklistTemplates]);
+
+  useEffect(() => {
+    localStorage.setItem('rss_users', JSON.stringify(users));
+  }, [users]);
 
   // Office Management
   const handleAddOffice = () => {
@@ -124,6 +154,165 @@ const Admin = () => {
     addNotification({
       type: 'info',
       message: 'Technician deleted successfully',
+      duration: 3000
+    });
+  };
+
+  // User Management
+  const handleAddUser = () => {
+    setEditingUser({ 
+      id: Date.now(), 
+      username: '', 
+      email: '', 
+      displayName: '', 
+      role: 'technician',
+      isActive: true,
+      isDemo: false,
+      password: '',
+      confirmPassword: ''
+    });
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser({ ...user, password: '', confirmPassword: '' });
+  };
+
+  const handleSaveUser = () => {
+    if (!editingUser.username.trim()) {
+      addNotification({
+        type: 'error',
+        message: 'Username is required',
+        duration: 3000
+      });
+      return;
+    }
+
+    if (!editingUser.displayName.trim()) {
+      addNotification({
+        type: 'error',
+        message: 'Display name is required',
+        duration: 3000
+      });
+      return;
+    }
+
+    // Check for duplicate username (except for current user being edited)
+    const existingUser = users.find(u => 
+      u.username.toLowerCase() === editingUser.username.toLowerCase() && 
+      u.id !== editingUser.id
+    );
+    
+    if (existingUser) {
+      addNotification({
+        type: 'error',
+        message: 'Username already exists',
+        duration: 3000
+      });
+      return;
+    }
+
+    // For new users, password is required
+    if (!editingUser.isDemo && (!editingUser.id || !users.find(u => u.id === editingUser.id))) {
+      if (!editingUser.password) {
+        addNotification({
+          type: 'error',
+          message: 'Password is required for new users',
+          duration: 3000
+        });
+        return;
+      }
+
+      if (editingUser.password !== editingUser.confirmPassword) {
+        addNotification({
+          type: 'error',
+          message: 'Passwords do not match',
+          duration: 3000
+        });
+        return;
+      }
+
+      if (editingUser.password.length < 6) {
+        addNotification({
+          type: 'error',
+          message: 'Password must be at least 6 characters',
+          duration: 3000
+        });
+        return;
+      }
+    }
+
+    const userToSave = {
+      ...editingUser,
+      lastUpdated: new Date().toISOString()
+    };
+
+    // Remove password fields from saved data (in real app, hash the password)
+    delete userToSave.password;
+    delete userToSave.confirmPassword;
+
+    if (editingUser.id && users.find(u => u.id === editingUser.id)) {
+      setUsers(users.map(u => u.id === editingUser.id ? userToSave : u));
+      addNotification({
+        type: 'success',
+        message: 'User updated successfully',
+        duration: 3000
+      });
+    } else {
+      userToSave.id = Date.now();
+      userToSave.createdAt = new Date().toISOString();
+      setUsers([...users, userToSave]);
+      addNotification({
+        type: 'success',
+        message: 'User created successfully',
+        duration: 3000
+      });
+    }
+
+    setEditingUser(null);
+  };
+
+  const handleDeleteUser = (id) => {
+    const userToDelete = users.find(u => u.id === id);
+    
+    if (userToDelete?.isDemo) {
+      addNotification({
+        type: 'error',
+        message: 'Cannot delete demo users',
+        duration: 3000
+      });
+      return;
+    }
+
+    setUsers(users.filter(u => u.id !== id));
+    setShowDeleteDialog(null);
+    addNotification({
+      type: 'info',
+      message: 'User deleted successfully',
+      duration: 3000
+    });
+  };
+
+  const handleToggleUserStatus = (id) => {
+    setUsers(users.map(u => 
+      u.id === id ? { ...u, isActive: !u.isActive, lastUpdated: new Date().toISOString() } : u
+    ));
+    
+    const user = users.find(u => u.id === id);
+    addNotification({
+      type: 'info',
+      message: `User ${user?.isActive ? 'deactivated' : 'activated'} successfully`,
+      duration: 3000
+    });
+  };
+
+  const handleChangeUserRole = (id, newRole) => {
+    setUsers(users.map(u => 
+      u.id === id ? { ...u, role: newRole, lastUpdated: new Date().toISOString() } : u
+    ));
+    
+    addNotification({
+      type: 'success',
+      message: `User role updated to ${newRole}`,
       duration: 3000
     });
   };
@@ -446,6 +635,107 @@ const Admin = () => {
         helpText="Manage office locations, technicians, and other system settings."
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* User Management */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <Shield size={20} className="mr-2 text-orange-500" />
+                User Management
+              </h3>
+              <Button size="sm" onClick={handleAddUser}>
+                <Plus size={16} />
+                Add User
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {users.length === 0 ? (
+                <p className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No users configured yet. Add your first user.
+                </p>
+              ) : (
+                users.map(user => (
+                  <div 
+                    key={user.id}
+                    className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                          {user.displayName || user.username}
+                        </h4>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          user.role === 'admin' 
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200'
+                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200'
+                        }`}>
+                          {user.role}
+                        </span>
+                        {!user.isActive && (
+                          <span className="px-2 py-1 text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 rounded-full">
+                            Inactive
+                          </span>
+                        )}
+                        {user.isDemo && (
+                          <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 rounded-full">
+                            Demo
+                          </span>
+                        )}
+                      </div>
+                      {user.email && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {user.email}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        @{user.username}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <div className="flex items-center space-x-1">
+                        <select
+                          value={user.role}
+                          onChange={(e) => handleChangeUserRole(user.id, e.target.value)}
+                          className="text-xs border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-2 py-1"
+                          disabled={user.isDemo}
+                        >
+                          <option value="technician">Technician</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={user.isActive ? "outline" : "success"}
+                        onClick={() => handleToggleUserStatus(user.id)}
+                        title={user.isActive ? 'Deactivate user' : 'Activate user'}
+                        disabled={user.isDemo}
+                      >
+                        {user.isActive ? <UserX size={14} /> : <UserCheck size={14} />}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditUser(user)}
+                        title="Edit user"
+                      >
+                        <Edit size={14} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => setShowDeleteDialog({ type: 'user', item: user })}
+                        title="Delete user"
+                        disabled={user.isDemo}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
           {/* Office Locations */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
             <div className="flex justify-between items-center mb-4">
@@ -757,6 +1047,116 @@ const Admin = () => {
         )}
       </Modal>
 
+      {/* Edit User Modal */}
+      <Modal
+        isOpen={!!editingUser}
+        onClose={() => setEditingUser(null)}
+        title={editingUser?.id && users.find(u => u.id === editingUser.id) ? 'Edit User' : 'Add User'}
+        size="md"
+      >
+        {editingUser && (
+          <div className="space-y-4">
+            <Input
+              label="Username *"
+              value={editingUser.username}
+              onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
+              placeholder="username"
+              required
+              disabled={editingUser.isDemo}
+            />
+            <Input
+              label="Display Name *"
+              value={editingUser.displayName}
+              onChange={(e) => setEditingUser({ ...editingUser, displayName: e.target.value })}
+              placeholder="Full Name"
+              required
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={editingUser.email}
+              onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+              placeholder="user@company.com"
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Role *
+              </label>
+              <select
+                value={editingUser.role}
+                onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2"
+                disabled={editingUser.isDemo}
+              >
+                <option value="technician">Technician</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            
+            {/* Password fields for new users or when changing password */}
+            {(!editingUser.isDemo && (!editingUser.id || !users.find(u => u.id === editingUser.id))) && (
+              <>
+                <Input
+                  label="Password *"
+                  type="password"
+                  value={editingUser.password || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                  placeholder="Enter password"
+                  required
+                />
+                <Input
+                  label="Confirm Password *"
+                  type="password"
+                  value={editingUser.confirmPassword || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, confirmPassword: e.target.value })}
+                  placeholder="Confirm password"
+                  required
+                />
+              </>
+            )}
+
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={editingUser.isActive}
+                  onChange={(e) => setEditingUser({ ...editingUser, isActive: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                  disabled={editingUser.isDemo}
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Active User
+                  </span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Inactive users cannot log in to the system
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {editingUser.isDemo && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>Demo User:</strong> Some settings cannot be modified for demo accounts.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button variant="outline" onClick={() => setEditingUser(null)}>
+                <X size={16} />
+                Cancel
+              </Button>
+              <Button onClick={handleSaveUser}>
+                <Save size={16} />
+                Save User
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Edit Checklist Template Modal */}
       <Modal
         isOpen={!!editingTemplate}
@@ -955,12 +1355,23 @@ const Admin = () => {
             handleDeleteOffice(showDeleteDialog.item.id);
           } else if (showDeleteDialog.type === 'template') {
             handleDeleteTemplate(showDeleteDialog.item.id);
+          } else if (showDeleteDialog.type === 'user') {
+            handleDeleteUser(showDeleteDialog.item.id);
           } else {
             handleDeleteTechnician(showDeleteDialog.item.id);
           }
         }}
-        title={`Delete ${showDeleteDialog?.type === 'office' ? 'Office' : showDeleteDialog?.type === 'template' ? 'Checklist Template' : 'Technician'}`}
-        message={`Are you sure you want to delete "${showDeleteDialog?.item?.name}"? This action cannot be undone.`}
+        title={`Delete ${
+          showDeleteDialog?.type === 'office' ? 'Office' : 
+          showDeleteDialog?.type === 'template' ? 'Checklist Template' : 
+          showDeleteDialog?.type === 'user' ? 'User' :
+          'Technician'
+        }`}
+        message={`Are you sure you want to delete "${
+          showDeleteDialog?.item?.name || 
+          showDeleteDialog?.item?.displayName || 
+          showDeleteDialog?.item?.username
+        }"? This action cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
         variant="danger"
