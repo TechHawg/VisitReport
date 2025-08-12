@@ -1,19 +1,13 @@
-/* Inventory Table Styles - Excel-like Appearance */
+/* Inventory Table Styles - Exact Excel Match */
 
 /* Force print color accuracy */
-#inventory-print,
-#inventory-print table,
-#inventory-print thead,
-#inventory-print th,
-#inventory-print td,
-#inventory-print .total,
-#inventory-print .broken {
+table, thead, th, td, .total {
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
   color-adjust: exact;
 }
 
-/* Table container */
+/* Container */
 .inventory-container {
   width: 100%;
   background: white;
@@ -22,7 +16,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Header band */
+/* Header band - Location, Date, Recorded By */
 .inventory-header-band {
   display: flex;
   justify-content: space-between;
@@ -56,6 +50,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+  table-layout: fixed; /* Fixed width for PDF compatibility */
 }
 
 /* Sticky header for web */
@@ -66,7 +61,7 @@
   background: white;
 }
 
-/* Two-row header */
+/* Two-row header styling */
 .inventory-table thead tr.header-groups th {
   background: #F6DED3;
   color: #212529;
@@ -91,13 +86,38 @@
   white-space: nowrap;
 }
 
-/* Description column - wider */
+/* Column width specifications for Letter/A4 compatibility */
 .inventory-table th.description-header,
 .inventory-table td.description-cell {
+  width: 150px;
   text-align: left !important;
   padding-left: 0.75rem !important;
-  min-width: 150px;
   font-weight: 500;
+}
+
+.inventory-table th.in-use-header,
+.inventory-table td.in-use-cell {
+  width: 80px;
+}
+
+.inventory-table th.other-use-header,
+.inventory-table td.other-use-cell {
+  width: 65px;
+}
+
+.inventory-table th.total-other-header,
+.inventory-table td.total-other-cell {
+  width: 70px;
+}
+
+.inventory-table th.inventory-not-in-use-header,
+.inventory-table td.inventory-not-in-use-cell {
+  width: 70px;
+}
+
+.inventory-table th.total-header,
+.inventory-table td.total-cell {
+  width: 60px;
 }
 
 /* Body cells */
@@ -137,9 +157,17 @@
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
+.inventory-table input[type="text"] {
+  width: 100%;
+  padding: 0.125rem 0.25rem;
+  border: none;
+  background: transparent;
+  font-weight: 500;
+}
+
 /* Read-only computed cells */
 .inventory-table .computed-cell {
-  font-weight: 600;
+  font-weight: 700;
   background: #f1f3f5;
   color: #212529;
   padding: 0.25rem;
@@ -159,15 +187,15 @@
   color: #856404;
 }
 
-/* Total column (black bg, white text) */
+/* Total column (black bg, white text) - exact Excel match */
 .inventory-table .total-cell {
-  background: #212529 !important;
-  color: white !important;
+  background: #000000 !important;
+  color: #ffffff !important;
   font-weight: 700;
   font-size: 0.9rem;
 }
 
-/* Broken column (red text) */
+/* Broken column (red text) - exact Excel match */
 .inventory-table .broken-input input,
 .inventory-table .broken-cell {
   color: #dc3545 !important;
@@ -178,6 +206,7 @@
 .inventory-table .icon-cell {
   padding: 0.25rem;
   color: #6c757d;
+  width: 20px;
 }
 
 /* Footer fields section */
@@ -273,24 +302,22 @@
   color: #495057;
 }
 
-/* Print styles */
+/* Print styles - exact PDF specifications */
 @media print {
   /* Remove sticky positioning */
   .inventory-table thead {
     position: static !important;
   }
   
-  /* Ensure colors print */
-  .inventory-table,
-  .inventory-table th,
-  .inventory-table td {
+  /* Ensure colors print exactly */
+  table, th, td {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
   
   /* Remove input borders for print */
-  .inventory-table input {
+  input {
     border: none !important;
     background: transparent !important;
     -webkit-appearance: none;
@@ -298,7 +325,7 @@
     appearance: none;
   }
   
-  /* Ensure page doesn't break inside table */
+  /* Prevent page breaks */
   .inventory-container {
     break-inside: avoid;
     page-break-inside: avoid;
@@ -314,12 +341,12 @@
     page-break-inside: avoid;
   }
   
-  /* Hide action buttons in print */
+  /* Hide actions in print */
   .inventory-actions {
     display: none !important;
   }
   
-  /* Adjust font sizes for print */
+  /* Adjust sizes for print */
   .inventory-table {
     font-size: 10pt;
   }
@@ -333,113 +360,38 @@
   .inventory-table .total-cell {
     background: #000000 !important;
     color: #ffffff !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
   
   /* Ensure broken text prints red */
   .inventory-table .broken-cell,
   .inventory-table .broken-input input {
     color: #dc3545 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  }
+  
+  /* Ensure header groups print with peach background */
+  .inventory-table thead tr.header-groups th {
+    background: #F6DED3 !important;
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .dark .inventory-container {
-    background: #1f2937;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .inventory-header-band {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
   }
   
-  .dark .inventory-header-band {
-    background: #374151;
-    border-bottom-color: #4b5563;
+  .inventory-footer-fields {
+    grid-template-columns: 1fr;
   }
   
-  .dark .inventory-header-band .header-field label {
-    color: #d1d5db;
+  .inventory-table {
+    font-size: 0.75rem;
   }
   
-  .dark .inventory-header-band .header-field input {
-    background: #1f2937;
-    border-color: #4b5563;
-    color: #f3f4f6;
-  }
-  
-  .dark .inventory-table thead {
-    background: #1f2937;
-  }
-  
-  .dark .inventory-table thead tr.header-groups th {
-    background: #7c5d4f;
-    color: #f3f4f6;
-    border-color: #6b7280;
-  }
-  
-  .dark .inventory-table thead tr.header-columns th {
-    background: #6b5442;
-    color: #e5e7eb;
-    border-color: #6b7280;
-  }
-  
-  .dark .inventory-table tbody td {
-    background: #1f2937;
-    border-color: #4b5563;
-    color: #f3f4f6;
-  }
-  
-  .dark .inventory-table tbody tr:nth-child(even) {
-    background-color: #374151;
-  }
-  
-  .dark .inventory-table tbody tr:hover {
-    background-color: #4b5563;
-  }
-  
-  .dark .inventory-table input[type="number"] {
-    background: #374151;
-    border-color: #4b5563;
-    color: #f3f4f6;
-  }
-  
-  .dark .inventory-table .computed-cell {
-    background: #4b5563;
-    color: #f3f4f6;
-  }
-  
-  .dark .inventory-table .total-other-cell {
-    background: #1e3a5f;
-    color: #93c5fd;
-  }
-  
-  .dark .inventory-table .spares-auto-cell {
-    background: #78350f;
-    color: #fde68a;
-  }
-  
-  .dark .inventory-table .total-cell {
-    background: #000000 !important;
-    color: #ffffff !important;
-  }
-  
-  .dark .inventory-footer-fields {
-    background: #374151;
-    border-top-color: #4b5563;
-  }
-  
-  .dark .inventory-footer-fields label {
-    color: #d1d5db;
-  }
-  
-  .dark .inventory-footer-fields input {
-    background: #1f2937;
-    border-color: #4b5563;
-    color: #f3f4f6;
-  }
-  
-  .dark .inventory-summary {
-    background: #4b5563;
-    color: #e5e7eb;
+  .inventory-table input[type="number"] {
+    min-width: 35px;
+    max-width: 45px;
   }
 }

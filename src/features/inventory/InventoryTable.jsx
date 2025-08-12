@@ -6,7 +6,7 @@ import {
 import { calc, calcAll, getSummaryTotals } from './calc.js';
 import '../../styles/inventory.css';
 
-// Default inventory items
+// Default inventory items with icons
 const DEFAULT_ITEMS = [
   { name: 'PCs', icon: <Monitor size={16} /> },
   { name: 'Laptops', icon: <HardDrive size={16} /> },
@@ -88,7 +88,7 @@ const InventoryTable = ({ data, onUpdate, onExportPDF }) => {
   const calculatedItems = useMemo(() => calcAll(items), [items]);
   const summaryTotals = useMemo(() => getSummaryTotals(calculatedItems), [calculatedItems]);
 
-  // Update handler with debouncing
+  // Update handler with debouncing and negative clamping
   const handleItemChange = useCallback((index, field, value) => {
     const numValue = Math.max(0, parseInt(value) || 0); // Clamp negatives to 0
     
@@ -143,7 +143,7 @@ const InventoryTable = ({ data, onUpdate, onExportPDF }) => {
     onUpdate(updatedData);
   }, [items, footerFields, headerInfo, data, onUpdate]);
 
-  // Save on changes
+  // Save on changes with debouncing
   React.useEffect(() => {
     const timer = setTimeout(() => {
       saveLegacyFormat();
@@ -173,9 +173,9 @@ const InventoryTable = ({ data, onUpdate, onExportPDF }) => {
     setItems([...items, newItem]);
   };
 
-  // Delete item
+  // Delete item (only custom items beyond defaults)
   const deleteItem = (index) => {
-    if (index >= DEFAULT_ITEMS.length) { // Only allow deleting custom items
+    if (index >= DEFAULT_ITEMS.length) {
       setItems(items.filter((_, i) => i !== index));
     }
   };
@@ -201,7 +201,7 @@ const InventoryTable = ({ data, onUpdate, onExportPDF }) => {
     ];
 
     const rows = calculatedItems.map(item => [
-      item.name,
+      `"${item.name}"`,
       item.inUse,
       item.training,
       item.conference,
@@ -254,9 +254,46 @@ Special Stations:
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
+  // PDF Export with html2pdf exact specifications
+  const exportPDF = async () => {
+    try {
+      // Wait for fonts to load
+      if (document.fonts) {
+        await document.fonts.ready;
+      }
+
+      const html2pdf = (await import('html2pdf.js')).default;
+      const element = document.querySelector('#inventory-print');
+      
+      if (!element) {
+        throw new Error('Print element not found');
+      }
+
+      const options = {
+        margin: [10, 10, 12, 10],
+        filename: 'Office-Inventory.pdf',
+        html2canvas: { 
+          scale: 2, 
+          backgroundColor: '#ffffff', 
+          windowWidth: element.scrollWidth || 1200 
+        },
+        pagebreak: { mode: ['css', 'avoid-all'] },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'letter', 
+          putOnlyUsedFonts: true 
+        }
+      };
+
+      await html2pdf().set(options).from(element).save();
+    } catch (error) {
+      console.error('PDF export failed:', error);
+    }
+  };
+
   return (
     <div id="inventory-print" className="inventory-container">
-      {/* Header Band */}
+      {/* Header Band - Location, Date, Recorded By */}
       <div className="inventory-header-band">
         <div className="header-field">
           <label>Location:</label>
@@ -286,30 +323,30 @@ Special Stations:
         </div>
       </div>
 
-      {/* Main Table */}
+      {/* Main Table - Exact Excel Layout */}
       <table className="inventory-table">
         <thead>
           {/* Row 1: Group Headers */}
           <tr className="header-groups">
             <th rowSpan={2} className="description-header">Description</th>
-            <th rowSpan={2}>In Use by<br/>Employees</th>
-            <th colSpan={7}>Other Use</th>
-            <th rowSpan={2}>Total<br/>Other Use</th>
-            <th colSpan={3}>Inventory Not in Use</th>
+            <th rowSpan={2} className="in-use-header">In Use by<br/>Employees</th>
+            <th colSpan={7} className="other-use-header">Other Use</th>
+            <th rowSpan={2} className="total-other-header">Total<br/>Other Use</th>
+            <th colSpan={3} className="inventory-not-in-use-header">Inventory Not in Use</th>
             <th rowSpan={2} className="total-header">Total</th>
           </tr>
           {/* Row 2: Sub-headers */}
           <tr className="header-columns">
-            <th>Training</th>
-            <th>Conference<br/>Room</th>
-            <th>GSM<br/>Office</th>
-            <th>Prospecting<br/>Station</th>
-            <th>Applicant<br/>Station</th>
-            <th>Visitor<br/>Station</th>
-            <th>Other</th>
-            <th>Spares On<br/>the Floor</th>
-            <th>Spares in<br/>Storage</th>
-            <th>Spares<br/>(Auto Fills)</th>
+            <th className="other-use-header">Training</th>
+            <th className="other-use-header">Conference<br/>Room</th>
+            <th className="other-use-header">GSM<br/>Office</th>
+            <th className="other-use-header">Prospecting<br/>Station</th>
+            <th className="other-use-header">Applicant<br/>Station</th>
+            <th className="other-use-header">Visitor<br/>Station</th>
+            <th className="other-use-header">Other</th>
+            <th className="inventory-not-in-use-header">Spares On<br/>the Floor</th>
+            <th className="inventory-not-in-use-header">Spares in<br/>Storage</th>
+            <th className="inventory-not-in-use-header">Spares<br/>(Auto Fills)</th>
           </tr>
         </thead>
         <tbody>
@@ -334,7 +371,7 @@ Special Stations:
                   )}
                 </div>
               </td>
-              <td>
+              <td className="in-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -342,7 +379,7 @@ Special Stations:
                   onChange={(e) => handleItemChange(index, 'inUse', e.target.value)}
                 />
               </td>
-              <td>
+              <td className="other-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -350,7 +387,7 @@ Special Stations:
                   onChange={(e) => handleItemChange(index, 'training', e.target.value)}
                 />
               </td>
-              <td>
+              <td className="other-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -358,7 +395,7 @@ Special Stations:
                   onChange={(e) => handleItemChange(index, 'conference', e.target.value)}
                 />
               </td>
-              <td>
+              <td className="other-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -366,7 +403,7 @@ Special Stations:
                   onChange={(e) => handleItemChange(index, 'gsm', e.target.value)}
                 />
               </td>
-              <td>
+              <td className="other-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -374,7 +411,7 @@ Special Stations:
                   onChange={(e) => handleItemChange(index, 'prospect', e.target.value)}
                 />
               </td>
-              <td>
+              <td className="other-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -382,7 +419,7 @@ Special Stations:
                   onChange={(e) => handleItemChange(index, 'applicant', e.target.value)}
                 />
               </td>
-              <td>
+              <td className="other-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -390,7 +427,7 @@ Special Stations:
                   onChange={(e) => handleItemChange(index, 'visitor', e.target.value)}
                 />
               </td>
-              <td>
+              <td className="other-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -399,7 +436,7 @@ Special Stations:
                 />
               </td>
               <td className="total-other-cell computed-cell">{item.totalOther}</td>
-              <td>
+              <td className="inventory-not-in-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -407,7 +444,7 @@ Special Stations:
                   onChange={(e) => handleItemChange(index, 'floor', e.target.value)}
                 />
               </td>
-              <td>
+              <td className="inventory-not-in-use-cell">
                 <input
                   type="number"
                   min="0"
@@ -422,6 +459,7 @@ Special Stations:
                   min="0"
                   value={item.broken}
                   onChange={(e) => handleItemChange(index, 'broken', e.target.value)}
+                  style={{ color: '#dc3545', fontWeight: 600 }}
                 />
               </td>
               <td className="total-cell">{item.total}</td>
@@ -503,6 +541,9 @@ Special Stations:
         </button>
         <button onClick={emailReport} className="btn btn-secondary">
           <Mail size={16} /> Email Report
+        </button>
+        <button onClick={exportPDF} className="btn btn-secondary">
+          <Download size={16} /> Export PDF
         </button>
       </div>
     </div>
