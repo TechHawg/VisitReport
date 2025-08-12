@@ -150,7 +150,7 @@ const InventoryTable = ({ data, onUpdate, onExportPDF }) => {
     }, 500); // Debounce 500ms
 
     return () => clearTimeout(timer);
-  }, [items, footerFields, headerInfo, saveLegacyFormat]);
+  }, [items, footerFields, headerInfo]);
 
   // Add custom item
   const addCustomItem = () => {

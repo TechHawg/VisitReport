@@ -1804,23 +1804,6 @@ const Storage = () => {
               </Select>
             </div>
 
-            {/* Power Source Selection for ISP Equipment */}
-            {editingDevice.type === 'isp-equipment' && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <Select
-                  label="Power Source"
-                  value={editingDevice.powerSource || ''}
-                  onChange={(e) => setEditingDevice({ ...editingDevice, powerSource: e.target.value })}
-                >
-                  <option value="">Select Power Source</option>
-                  <option value="UPS">UPS (Uninterruptible Power Supply)</option>
-                  <option value="PDU">PDU (Power Distribution Unit)</option>
-                </Select>
-                <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                  Select the power source to display the device with the appropriate color coding in rack diagrams.
-                </p>
-              </div>
-            )}
 
             {editingDevice.type !== 'patch-panel' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
