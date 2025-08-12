@@ -237,46 +237,44 @@ const RackDiagram: React.FC<RackDiagramProps> = ({
         
         {/* Rack Content */}
         <div className="rack-content">
-          {/* Render devices positioned at their start units */}
-          {devices.map((device, index) => {
-            const startUnit = device.startUnit || 1;
-            const unitSpan = device.unitSpan || device.rack_units || 1;
-            
-            // Calculate grid position: unit 45 = row 1, unit 44 = row 2, etc.
-            // Device spans DOWN from start unit (e.g., start=37, span=2 -> units 37,36)
-            const gridRowStart = rackHeight - startUnit + 1;
-            
-            return (
-              <div
-                key={`${device.id}-${index}`}
-                style={{
-                  gridRowStart,
-                  gridRowEnd: `span ${unitSpan}`,
-                }}
-              >
-                <DeviceBlock
-                  device={device}
-                  onClick={() => handleDeviceClick(device)}
-                />
-              </div>
-            );
-          })}
-          
-          {/* Render empty units for remaining space */}
+          {/* Render all units in order, showing devices only where they actually exist */}
           {units.map(unitNum => {
             const device = devicesByUnit[unitNum];
             
-            if (!device) {
-              return (
-                <div
-                  key={`empty-${unitNum}`}
-                  className="empty-unit"
-                  title={`Unit ${unitNum} - Available`}
-                />
-              );
+            if (device) {
+              // Only render device block at its starting unit
+              const isStartUnit = device.startUnit === unitNum;
+              if (isStartUnit) {
+                const unitSpan = device.unitSpan || device.rack_units || 1;
+                const gridRowStart = rackHeight - unitNum + 1;
+                
+                return (
+                  <div
+                    key={`device-${device.id}-${unitNum}`}
+                    style={{
+                      gridRowStart,
+                      gridRowEnd: `span ${unitSpan}`,
+                    }}
+                  >
+                    <DeviceBlock
+                      device={device}
+                      onClick={() => handleDeviceClick(device)}
+                    />
+                  </div>
+                );
+              }
+              // Device continues from previous unit - render nothing (space already occupied)
+              return null;
             }
             
-            return null; // Space occupied by device
+            // Empty unit - show available space
+            return (
+              <div
+                key={`empty-${unitNum}`}
+                className="empty-unit"
+                title={`Unit ${unitNum} - Available`}
+              />
+            );
           })}
         </div>
       </div>
