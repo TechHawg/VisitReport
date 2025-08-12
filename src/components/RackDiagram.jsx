@@ -4,7 +4,7 @@ import '../styles/rack.css';
 /**
  * Device type color mapping with WCAG-compliant contrast
  */
-const DEVICE_TYPE_COLORS: { [key: string]: { bg: string; fg: string } } = {
+const DEVICE_TYPE_COLORS = {
   // Infrastructure & Power
   'ups': { bg: '#dc2626', fg: '#ffffff' }, // Red - Critical power
   'pdu': { bg: '#ea580c', fg: '#ffffff' }, // Orange - Power distribution
@@ -78,7 +78,7 @@ const DeviceBlock = ({ device, onClick }) => {
         gridRow: `span ${unitSpan}`,
         backgroundColor: colors.bg,
         color: colors.fg,
-      } as React.CSSProperties}
+      }}
       onClick={onClick}
       title={`${device.name} (${device.type}) - ${unitSpan}U`}
     >
@@ -115,7 +115,7 @@ const RackDiagram = ({
   const units = Array.from({ length: rackHeight }, (_, i) => rackHeight - i);
   
   // Create a map of which units are occupied by devices
-  const devicesByUnit: { [unit: number]: Device } = {};
+  const devicesByUnit = {};
   
   devices.forEach(device => {
     const startUnit = device.startUnit || 1;
@@ -135,7 +135,7 @@ const RackDiagram = ({
   const occupiedUnits = Object.keys(devicesByUnit).length;
   const utilization = Math.round((occupiedUnits / rackHeight) * 100);
   
-  const handleDeviceClick = (device: Device) => {
+  const handleDeviceClick = (device) => {
     if (onDeviceClick) {
       onDeviceClick(device);
     }

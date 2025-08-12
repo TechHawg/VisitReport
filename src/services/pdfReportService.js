@@ -438,7 +438,7 @@ class PDFReportService {
       yPosition = await this.addInfrastructureAssessmentRestructured(pdf, reportData, yPosition, includeRackDiagrams);
 
       // 5. Inventory Table: Professional table format
-      yPosition = this.addInventoryTable(pdf, reportData, yPosition);
+      yPosition = await this.addInventoryTable(pdf, reportData, yPosition);
 
       // 6. Special Stations: Listed in a row
       yPosition = this.addSpecialStations(pdf, reportData, yPosition);
@@ -872,61 +872,137 @@ class PDFReportService {
   }
 
   /**
-   * Add Inventory Table - Enhanced with multiple data structure support
+   * Add Inventory Table - Excel-like format with html2pdf
    */
-  addInventoryTable(pdf, reportData, yPosition) {
-    let yPos = this.checkSectionPageBreak(pdf, yPosition, 40, 100);
+  async addInventoryTable(pdf, reportData, yPosition) {
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, 40, 150);
 
     // Section title
     this.applyStyle(pdf, 'sectionHeader', 'primary');
-    pdf.text('Inventory Table', this.pageMargin, yPos);
+    pdf.text('Office Inventory', this.pageMargin, yPos);
     yPos += 8;
     
     // Section divider
     yPos = this.drawSectionDivider(pdf, yPos);
     yPos += 10;
 
-    // Support multiple inventory data structures
-    let inventorySource = null;
-    
-    if (reportData.inventory) {
-      if (Array.isArray(reportData.inventory)) {
-        inventorySource = reportData.inventory;
-      } else if (reportData.inventory.items && Array.isArray(reportData.inventory.items)) {
-        inventorySource = reportData.inventory.items;
-      } else if (typeof reportData.inventory === 'object') {
-        // Convert object to array format
-        inventorySource = Object.entries(reportData.inventory).map(([key, value]) => ({
-          category: key,
-          description: value.description || key,
-          quantity: value.quantity || value.count || value.total || 0,
-          condition: value.condition || 'Good',
-          location: value.location || 'N/A'
-        }));
+    // Check if the new inventory table component exists in DOM
+    const inventoryPrintElement = document.querySelector('#inventory-print');
+    if (inventoryPrintElement) {
+      try {
+        // Use html2pdf for high-fidelity table capture
+        const html2pdf = (await import('html2pdf.js')).default;
+        
+        // Wait for fonts and images to load
+        await document.fonts.ready;
+        
+        // Configure html2pdf options for inventory table
+        const options = {
+          margin: [0, 0, 0, 0],
+          filename: 'temp-inventory.pdf',
+          html2canvas: {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: false,
+            windowWidth: inventoryPrintElement.scrollWidth || 1200,
+            windowHeight: inventoryPrintElement.scrollHeight || 800
+          },
+          jsPDF: {
+            unit: 'mm',
+            format: 'letter',
+            orientation: 'landscape', // Use landscape for wider table
+            putOnlyUsedFonts: true
+          }
+        };
+
+        // Temporarily hide action buttons and other non-printable elements
+        const actionElements = inventoryPrintElement.querySelectorAll('.inventory-actions, .btn, button:not([data-print="true"])');
+        const originalDisplay = Array.from(actionElements).map(el => {
+          const display = el.style.display;
+          el.style.display = 'none';
+          return display;
+        });
+
+        // Generate PDF from the inventory table
+        const inventoryPdf = await html2pdf().set(options).from(inventoryPrintElement).toPdf().get('pdf');
+        
+        // Restore hidden elements
+        actionElements.forEach((el, index) => {
+          el.style.display = originalDisplay[index];
+        });
+
+        // Get the inventory table as image and add to main PDF
+        const inventoryCanvas = await html2pdf().set({
+          ...options,
+          html2canvas: {
+            ...options.html2canvas,
+            height: inventoryPrintElement.scrollHeight,
+            width: inventoryPrintElement.scrollWidth
+          }
+        }).from(inventoryPrintElement).to('canvas').get('canvas');
+
+        // Convert canvas to image and add to PDF
+        const inventoryImgData = inventoryCanvas.toDataURL('image/png');
+        
+        // Calculate dimensions to fit on page
+        const imgWidth = this.pageWidth - (this.pageMargin * 2);
+        const imgHeight = (inventoryCanvas.height * imgWidth) / inventoryCanvas.width;
+        
+        // Check if we need a new page
+        if (yPos + imgHeight > this.pageHeight - this.pageMargin) {
+          pdf.addPage();
+          yPos = this.pageMargin;
+        }
+
+        // Add the inventory table image
+        pdf.addImage(inventoryImgData, 'PNG', this.pageMargin, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 10;
+
+        return yPos;
+
+      } catch (error) {
+        console.warn('Failed to capture inventory table as image, falling back to text format:', error);
+        // Fall through to legacy format below
       }
     }
 
-    if (inventorySource && inventorySource.length > 0) {
+    // Fallback to legacy text format if html2pdf fails
+    const inventorySource = reportData.inventory?.items || [];
+
+    if (inventorySource.length > 0) {
+      // Create a simplified table with key totals
+      const headers = ['Item', 'In Use', 'Other Use', 'Spares', 'Broken', 'Total'];
       const inventoryData = inventorySource.map(item => {
-        // Handle different item structures
-        const category = item.category || item.type || item.itemType || 'N/A';
-        const description = item.description || item.name || item.item || 'N/A';
-        const quantity = (item.quantity || item.count || item.total || item.inUse || 0).toString();
-        const condition = item.condition || item.status || 'Good';
-        const location = item.location || item.room || item.area || 'N/A';
+        const inUse = item.inUse || 0;
+        const otherUse = Object.values(item.otherUse || {}).reduce((sum, val) => sum + val, 0);
+        const spares = Object.values(item.spares || {}).reduce((sum, val) => sum + val, 0);
+        const broken = item.broken || 0;
+        const total = inUse + otherUse + spares + broken;
         
-        return [category, description, quantity, condition, location];
+        return [
+          item.description || item.name || 'Unknown',
+          inUse.toString(),
+          otherUse.toString(),
+          spares.toString(),
+          broken.toString(),
+          total.toString()
+        ];
       });
 
-      // Add summary information
-      const totalItems = inventoryData.reduce((sum, row) => sum + parseInt(row[2] || 0, 10), 0);
-      if (totalItems > 0) {
-        this.applyStyle(pdf, 'body', 'textMuted');
-        pdf.text(`Total inventory items: ${totalItems}`, this.pageMargin, yPos);
-        yPos += 8;
-      }
-      
-      yPos = this.addTable(pdf, inventoryData, yPos, ['Category', 'Description', 'Quantity', 'Condition', 'Location']);
+      // Add totals row
+      const totals = inventoryData.reduce((acc, row) => {
+        acc[1] += parseInt(row[1]) || 0;
+        acc[2] += parseInt(row[2]) || 0;
+        acc[3] += parseInt(row[3]) || 0;
+        acc[4] += parseInt(row[4]) || 0;
+        acc[5] += parseInt(row[5]) || 0;
+        return acc;
+      }, ['TOTAL', 0, 0, 0, 0, 0]);
+
+      inventoryData.push(totals.map(val => val.toString()));
+
+      yPos = this.addTable(pdf, inventoryData, yPos, headers);
     } else {
       this.applyStyle(pdf, 'body', 'secondary');
       pdf.text('No inventory data available', this.pageMargin, yPos);
