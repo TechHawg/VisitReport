@@ -185,11 +185,12 @@ const Storage = () => {
     lastUpdated: new Date().toISOString().split('T')[0]
   });
 
-  const addDevice = (locationId, rackId) => {
+  const addDevice = (locationId, rackId, options = {}) => {
     setEditingDevice({ 
       ...getEmptyDevice(), 
       locationId, 
       rackId,
+      startUnit: options.startUnit || '',
       isNew: true 
     });
   };
@@ -769,6 +770,11 @@ const Storage = () => {
 
   // New CSS Grid-based rack visualization - optimized for PDF export
   const renderRackVisualization = (rack, locationId, showControls = false, useGridLayout = true) => {
+    // If showControls is true, use RackVisualizer for editing functionality
+    if (showControls) {
+      useGridLayout = false;
+    }
+    
     if (useGridLayout) {
       // Use new CSS Grid-based RackDiagram component
       return (
@@ -2053,8 +2059,90 @@ const Storage = () => {
               </div>
             )}
 
-            {/* Other devices - standard PDU connections (but NOT UPS) - Updated to include Router and ISP Equipment */}
-            {(['switch','top-level','sd-wan','camera-server','router','isp-equipment'].includes(editingDevice.type)) && (
+            {/* ISP Equipment - allows selection between UPS or PDU */}
+            {editingDevice.type === 'isp-equipment' && (
+              <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100">Power Connections</h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const next = [...(editingDevice.pduPorts || [])];
+                      next.push({ pduId: '', outlet: '', type: 'pdu' });
+                      setEditingDevice({ ...editingDevice, pduPorts: next });
+                    }}
+                  >
+                    Add Power Connection
+                  </Button>
+                </div>
+                {(editingDevice.pduPorts || []).length === 0 && (
+                  <Alert variant="info">Add power connections (UPS or PDU outlets).</Alert>
+                )}
+                {(editingDevice.pduPorts || []).map((p, idx) => (
+                  <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Device Type
+                      </label>
+                      <Select
+                        value={p.type || 'pdu'}
+                        onChange={(e) => {
+                          const next = [...(editingDevice.pduPorts || [])];
+                          next[idx] = { ...next[idx], type: e.target.value };
+                          setEditingDevice({ ...editingDevice, pduPorts: next });
+                        }}
+                      >
+                        <option value="pdu">PDU</option>
+                        <option value="ups">UPS</option>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Device ID
+                      </label>
+                      <Input
+                        value={p.pduId || ''}
+                        onChange={(e) => {
+                          const next = [...(editingDevice.pduPorts || [])];
+                          next[idx] = { ...next[idx], pduId: e.target.value };
+                          setEditingDevice({ ...editingDevice, pduPorts: next });
+                        }}
+                        placeholder="Device ID"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Port/Outlet
+                      </label>
+                      <Input
+                        value={p.outlet || ''}
+                        onChange={(e) => {
+                          const next = [...(editingDevice.pduPorts || [])];
+                          next[idx] = { ...next[idx], outlet: e.target.value };
+                          setEditingDevice({ ...editingDevice, pduPorts: next });
+                        }}
+                        placeholder="Port number"
+                      />
+                    </div>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => {
+                        const next = [...(editingDevice.pduPorts || [])];
+                        next.splice(idx, 1);
+                        setEditingDevice({ ...editingDevice, pduPorts: next });
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Other devices - standard PDU connections (but NOT UPS) - Updated to include Router */}
+            {(['switch','top-level','sd-wan','camera-server','router'].includes(editingDevice.type)) && (
               <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium text-gray-900 dark:text-gray-100">
