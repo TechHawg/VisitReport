@@ -973,7 +973,7 @@ const Storage = () => {
     );
   };
 
-  // Restrict device types per requirements
+  // Device types per requirements - Updated with Router and ISP Equipment
   const deviceTypes = [
     { value: 'ups', label: 'UPS', icon: <Zap size={16} /> },
     { value: 'pdu', label: 'PDU', icon: <Zap size={16} /> },
