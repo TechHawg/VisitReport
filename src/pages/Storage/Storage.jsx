@@ -1414,7 +1414,24 @@ const Storage = () => {
                                       (device.pduPorts || []).some(port => port.pduId === String(powerDevice.id))
                                     ).map(device => ({
                                       ...device,
-                                      outlets: (device.pduPorts || []).filter(port => port.pduId === String(powerDevice.id))
+                                      outlets: (device.pduPorts || [])
+                                        .filter(port => port.pduId === String(powerDevice.id))
+                                        .sort((a, b) => {
+                                          // Sort by outlet number (handle both string and numeric values)
+                                          const aOutlet = String(a.outlet || '').toLowerCase();
+                                          const bOutlet = String(b.outlet || '').toLowerCase();
+                                          
+                                          // Extract numeric part if present
+                                          const aMatch = aOutlet.match(/(\d+)/);
+                                          const bMatch = bOutlet.match(/(\d+)/);
+                                          
+                                          if (aMatch && bMatch) {
+                                            return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+                                          }
+                                          
+                                          // Fallback to string comparison
+                                          return aOutlet.localeCompare(bOutlet);
+                                        })
                                     }))
                                   );
 
@@ -2512,9 +2529,24 @@ Rack-003,Storage Room,18,2kW,Storage array rack`);
                     )
                   ).map(device => ({
                     ...device,
-                    connections: (device.pduPorts || []).filter(port => 
-                      String(port.pduId) === String(selectedDevice.id)
-                    ),
+                    connections: (device.pduPorts || [])
+                      .filter(port => String(port.pduId) === String(selectedDevice.id))
+                      .sort((a, b) => {
+                        // Sort by outlet number (handle both string and numeric values)
+                        const aOutlet = String(a.outlet || '').toLowerCase();
+                        const bOutlet = String(b.outlet || '').toLowerCase();
+                        
+                        // Extract numeric part if present
+                        const aMatch = aOutlet.match(/(\d+)/);
+                        const bMatch = bOutlet.match(/(\d+)/);
+                        
+                        if (aMatch && bMatch) {
+                          return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+                        }
+                        
+                        // Fallback to string comparison
+                        return aOutlet.localeCompare(bOutlet);
+                      }),
                     locationName: location.name,
                     rackName: rack.name
                   }))

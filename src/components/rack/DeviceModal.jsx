@@ -243,7 +243,24 @@ const DeviceModal = ({
           (d.pduPorts || []).some(port => port.pduId === String(device.id))
         ).map(d => ({
           ...d,
-          outlets: (d.pduPorts || []).filter(port => port.pduId === String(device.id))
+          outlets: (d.pduPorts || [])
+            .filter(port => port.pduId === String(device.id))
+            .sort((a, b) => {
+              // Sort by outlet number (handle both string and numeric values)
+              const aOutlet = String(a.outlet || '').toLowerCase();
+              const bOutlet = String(b.outlet || '').toLowerCase();
+              
+              // Extract numeric part if present
+              const aMatch = aOutlet.match(/(\d+)/);
+              const bMatch = bOutlet.match(/(\d+)/);
+              
+              if (aMatch && bMatch) {
+                return parseInt(aMatch[1]) - parseInt(bMatch[1]);
+              }
+              
+              // Fallback to string comparison
+              return aOutlet.localeCompare(bOutlet);
+            })
         }));
 
         // Determine total ports (assume 8, 16, 24, or 48 based on device type or connections)
