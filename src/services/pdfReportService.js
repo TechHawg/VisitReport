@@ -35,7 +35,7 @@ class PDFReportService {
       shadow: [0, 0, 0]            // Shadow color
     };
     
-    // Enhanced typography settings for professional appearance
+    // Enhanced typography settings for professional appearance - COMPACT for Excel-like tables
     this.fonts = {
       title: { size: 32, weight: 'bold', font: 'helvetica' },
       subtitle: { size: 14, weight: 'normal', font: 'helvetica' },
@@ -46,20 +46,20 @@ class PDFReportService {
       bodyLarge: { size: 12, weight: 'normal', font: 'helvetica' },
       caption: { size: 9, weight: 'normal', font: 'helvetica' },
       captionBold: { size: 9, weight: 'bold', font: 'helvetica' },
-      tableHeader: { size: 11, weight: 'bold', font: 'helvetica' },
-      tableBody: { size: 10, weight: 'normal', font: 'helvetica' },
+      tableHeader: { size: 8, weight: 'bold', font: 'helvetica' },  // Reduced from 11 to 8
+      tableBody: { size: 7, weight: 'normal', font: 'helvetica' },   // Reduced from 10 to 7
       metadata: { size: 10, weight: 'normal', font: 'helvetica' },
       metadataLabel: { size: 10, weight: 'bold', font: 'helvetica' }
     };
     
-    // Enhanced layout settings for professional presentation
+    // Enhanced layout settings for professional presentation - COMPACT
     this.layout = {
       sectionSpacing: 25,
       subsectionSpacing: 18,
       paragraphSpacing: 10,
       lineHeight: 1.5,
-      tableRowHeight: 12,
-      tableHeaderHeight: 16,
+      tableRowHeight: 6,     // Reduced from 12 to 6 (Excel-like)
+      tableHeaderHeight: 8,   // Reduced from 16 to 8
       headerHeight: 75,
       footerHeight: 30,
       cardPadding: 8,
@@ -1225,25 +1225,51 @@ class PDFReportService {
     yPos = this.drawSectionDivider(pdf, yPos);
     yPos += 10;
 
-    const sccmList = (reportData.sccmData && Array.isArray(reportData.sccmData))
-      ? reportData.sccmData
-      : (reportData.infrastructure?.sccmPCs || reportData.sccmPCs || []).map(pc => ({
-          computerName: pc.name || pc.computerName,
-          operatingSystem: pc.os || pc.operatingSystem,
-          lastSeen: pc.lastSeen,
-          status: pc.sccmStatus || pc.status,
-          compliance: pc.compliance
-        }));
+    // Fix SCCM data access - look for computers array inside sccmPCs object
+    let sccmList = [];
+    
+    if (reportData.sccmData && Array.isArray(reportData.sccmData)) {
+      sccmList = reportData.sccmData;
+    } else if (reportData.sccmPCs?.computers && Array.isArray(reportData.sccmPCs.computers)) {
+      // This is the correct path - sccmPCs.computers
+      sccmList = reportData.sccmPCs.computers.map(pc => ({
+        computerName: pc.name || pc.computerName || 'N/A',
+        operatingSystem: pc.os || pc.operatingSystem || 'N/A',
+        lastSeen: pc.lastSeen || 'N/A',
+        status: pc.sccmStatus || pc.status || 'Unknown',
+        compliance: pc.compliance || 'N/A',
+        model: pc.model || 'N/A',
+        serialNumber: pc.serialNumber || 'N/A',
+        lastLoginUsername: pc.lastLoginUsername || 'N/A'
+      }));
+    } else if (reportData.infrastructure?.sccmPCs && Array.isArray(reportData.infrastructure.sccmPCs)) {
+      sccmList = reportData.infrastructure.sccmPCs.map(pc => ({
+        computerName: pc.name || pc.computerName || 'N/A',
+        operatingSystem: pc.os || pc.operatingSystem || 'N/A',
+        lastSeen: pc.lastSeen || 'N/A',
+        status: pc.sccmStatus || pc.status || 'Unknown',
+        compliance: pc.compliance || 'N/A'
+      }));
+    }
 
     if (sccmList && sccmList.length > 0) {
+      // Enhanced SCCM table with more information in compact format
       const sccmTableData = sccmList.map(pc => [
         pc.computerName || 'N/A',
+        pc.model || 'N/A',
+        pc.serialNumber || 'N/A',
         pc.operatingSystem || 'N/A',
+        pc.lastLoginUsername || 'N/A',
         pc.lastSeen || 'N/A',
-        pc.status || 'Unknown',
-        pc.compliance || 'N/A'
+        pc.status || 'Unknown'
       ]);
-      yPos = this.addTable(pdf, sccmTableData, yPos, ['Computer Name', 'OS', 'Last Seen', 'Status', 'Compliance']);
+      
+      // Use custom column widths for better space utilization
+      const columnWidths = [0.18, 0.15, 0.15, 0.15, 0.15, 0.12, 0.10];
+      
+      yPos = this.addTable(pdf, sccmTableData, yPos, 
+        ['Computer', 'Model', 'Serial#', 'OS', 'Last User', 'Last Seen', 'Status'],
+        columnWidths);
     } else {
       this.applyStyle(pdf, 'body', 'secondary');
       pdf.text('No SCCM data available', this.pageMargin, yPos);
@@ -3439,9 +3465,9 @@ class PDFReportService {
         pdf.setGState(pdf.GState({ opacity: 1 }));
       }
       this.applyStyle(pdf, 'tableHeader', 'white');
-      let x = this.pageMargin + 6;
-      headers.forEach((h, i) => { pdf.text(h, x, yPos + headerHeight/2 + 2); x += colWidths[i]; });
-      yPos += headerHeight + 3;
+      let x = this.pageMargin + 2;  // Reduced padding from 6 to 2
+      headers.forEach((h, i) => { pdf.text(h, x, yPos + headerHeight/2 + 1); x += colWidths[i]; });
+      yPos += headerHeight + 1;  // Reduced spacing from 3 to 1
       // header separator
       pdf.setDrawColor(...this.colors.primary);
       pdf.setLineWidth(1.2);
@@ -3467,19 +3493,19 @@ class PDFReportService {
     if ((cardStyle || borderStyle === 'modern') && data.length <= 12) drawPageCard();
 
     this.applyStyle(pdf, 'tableBody');
-    const lineH = 5;
+    const lineH = 3.5;  // Reduced from 5 to 3.5 for tighter line spacing
     data.forEach((row, rIdx) => {
       // compute wrapped lines per cell
       const cellLines = row.map((cell, i) => {
         const text = String(cell ?? '');
-        const width = colWidths[i] - 8;
+        const width = colWidths[i] - 3;  // Reduced padding from 8 to 3
         return pdf.splitTextToSize(text, width);
       });
       const maxLines = Math.max(...cellLines.map(l => l.length)) || 1;
-      const dynamicRowH = Math.max(rowHeight, maxLines * lineH + 4);
+      const dynamicRowH = Math.max(rowHeight, maxLines * lineH + 2);  // Reduced padding from 4 to 2
 
       const beforePages = pdf.internal.getNumberOfPages();
-      const proposedY = this.checkPageBreak(pdf, yPos, dynamicRowH + 6);
+      const proposedY = this.checkPageBreak(pdf, yPos, dynamicRowH + 2);  // Reduced from 6 to 2
       const afterPages = pdf.internal.getNumberOfPages();
       if (proposedY !== yPos || afterPages > beforePages) {
         yPos = proposedY;
@@ -3489,25 +3515,25 @@ class PDFReportService {
 
       if (alternateRowColors && zebraStripe && rIdx % 2 === 1) {
         pdf.setFillColor(...this.colors.lightAlt);
-        pdf.setGState(pdf.GState({ opacity: 0.5 }));
-        pdf.rect(this.pageMargin, yPos - 1, availableWidth, dynamicRowH, 'F');
+        pdf.setGState(pdf.GState({ opacity: 0.3 }));  // Reduced opacity for subtler zebra striping
+        pdf.rect(this.pageMargin, yPos - 0.5, availableWidth, dynamicRowH, 'F');
         pdf.setGState(pdf.GState({ opacity: 1 }));
       }
 
-      let x = this.pageMargin + 6;
+      let x = this.pageMargin + 2;  // Reduced padding from 6 to 2
       cellLines.forEach((lines, i) => {
         // status indicator support remains for designated column
         let leftPad = 0;
         if (i === statusColumn && row[i]) {
-          leftPad = this.drawStatusIndicator(pdf, x, yPos + 2, row[i]);
+          leftPad = this.drawStatusIndicator(pdf, x, yPos + 1, row[i]);
         }
-        lines.forEach((ln, k) => pdf.text(ln, x + leftPad, yPos + 6 + k * lineH));
+        lines.forEach((ln, k) => pdf.text(ln, x + leftPad, yPos + 3.5 + k * lineH));  // Adjusted text position
         x += colWidths[i];
       });
 
       pdf.setDrawColor(...this.colors.borderLight);
-      pdf.setLineWidth(0.2);
-      pdf.line(this.pageMargin + 5, yPos + dynamicRowH - 1, this.pageWidth - this.pageMargin - 5, yPos + dynamicRowH - 1);
+      pdf.setLineWidth(0.1);  // Thinner lines from 0.2 to 0.1
+      pdf.line(this.pageMargin + 2, yPos + dynamicRowH - 0.5, this.pageWidth - this.pageMargin - 2, yPos + dynamicRowH - 0.5);
 
       yPos += dynamicRowH;
     });
