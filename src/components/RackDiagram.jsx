@@ -33,11 +33,23 @@ const DEVICE_TYPE_COLORS = {
 };
 
 /**
- * Generate consistent color for device based on its type
+ * Generate consistent color for device based on its type and power source
  * Falls back to device-specific color if type is not recognized
  */
 function colorForDevice(device) {
   const deviceType = device.type?.toLowerCase() || 'default';
+  
+  // Special handling for ISP Equipment with power source indication
+  if (deviceType === 'isp-equipment') {
+    const powerSource = device.powerSource?.toLowerCase();
+    if (powerSource === 'ups') {
+      return { bg: '#dc2626', fg: '#ffffff' }; // Red like UPS
+    } else if (powerSource === 'pdu') {
+      return { bg: '#ea580c', fg: '#ffffff' }; // Orange like PDU
+    }
+    // Default ISP equipment color if no power source specified
+    return DEVICE_TYPE_COLORS['isp-equipment'];
+  }
   
   // Check if we have a predefined color for this device type
   if (DEVICE_TYPE_COLORS[deviceType]) {
@@ -80,7 +92,7 @@ const DeviceBlock = ({ device, onClick }) => {
         color: colors.fg,
       }}
       onClick={onClick}
-      title={`${device.name} (${device.type}) - ${unitSpan}U`}
+      title={`${device.name} (${device.type}) - ${unitSpan}U${device.powerSource ? ` - Power: ${device.powerSource.toUpperCase()}` : ''}`}
     >
       <div className="device-content">
         <div className="device-name">{device.name}</div>
@@ -91,6 +103,11 @@ const DeviceBlock = ({ device, onClick }) => {
         {device.model && (
           <div className="device-model">
             {device.manufacturer && `${device.manufacturer} `}{device.model}
+          </div>
+        )}
+        {device.type?.toLowerCase() === 'isp-equipment' && device.powerSource && (
+          <div className="device-power-source">
+            Power: {device.powerSource.toUpperCase()}
           </div>
         )}
       </div>
@@ -167,11 +184,27 @@ const RackDiagram = ({
         <div className="device-type-legend">
           <div className="legend-title">Device Types:</div>
           <div className="legend-colors">
-            {Array.from(new Set(devices.map(d => d.type?.toLowerCase()).filter(Boolean)))
-              .sort()
-              .map(deviceType => {
+            {(() => {
+              const deviceTypes = new Set();
+              const ispPowerSources = new Set();
+              
+              devices.forEach(device => {
+                const deviceType = device.type?.toLowerCase();
+                if (deviceType) {
+                  if (deviceType === 'isp-equipment' && device.powerSource) {
+                    ispPowerSources.add(device.powerSource.toLowerCase());
+                  } else {
+                    deviceTypes.add(deviceType);
+                  }
+                }
+              });
+              
+              const legendItems = [];
+              
+              // Regular device types
+              Array.from(deviceTypes).sort().forEach(deviceType => {
                 const colors = DEVICE_TYPE_COLORS[deviceType] || DEVICE_TYPE_COLORS['default'];
-                return (
+                legendItems.push(
                   <div key={deviceType} className="legend-color-item">
                     <div 
                       className="color-swatch"
@@ -180,7 +213,28 @@ const RackDiagram = ({
                     <span className="color-label">{deviceType.replace('-', ' ').toUpperCase()}</span>
                   </div>
                 );
-              })}
+              });
+              
+              // ISP Equipment with power sources
+              if (ispPowerSources.size > 0) {
+                Array.from(ispPowerSources).sort().forEach(powerSource => {
+                  const colors = powerSource === 'ups' 
+                    ? { bg: '#dc2626', fg: '#ffffff' }
+                    : { bg: '#ea580c', fg: '#ffffff' };
+                  legendItems.push(
+                    <div key={`isp-${powerSource}`} className="legend-color-item">
+                      <div 
+                        className="color-swatch"
+                        style={{ backgroundColor: colors.bg, color: colors.fg }}
+                      />
+                      <span className="color-label">ISP EQUIPMENT ({powerSource.toUpperCase()})</span>
+                    </div>
+                  );
+                });
+              }
+              
+              return legendItems;
+            })()}
           </div>
         </div>
       )}
