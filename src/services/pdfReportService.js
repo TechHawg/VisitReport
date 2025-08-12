@@ -1470,48 +1470,61 @@ class PDFReportService {
   }
 
   /**
-   * Generate power outlet mapping table from device data
+   * Generate power outlet mapping table from device data - PDU/UPS only with per-port mapping
    */
   addPowerOutletTable(pdf, reportData, yPosition) {
     let yPos = yPosition;
 
-    // Collect power information from racks and devices
-    const powerMappings = [];
-
+    // Collect all devices from all racks
+    const allDevices = [];
     if (reportData.racks && reportData.racks.length > 0) {
       reportData.racks.forEach((rack, rackIndex) => {
         const rackName = rack.name || `Rack ${rackIndex + 1}`;
-        
         if (rack.devices && rack.devices.length > 0) {
           rack.devices.forEach(device => {
-            if (device.type && ['ups', 'pdu', 'server', 'switch', 'router'].includes(device.type.toLowerCase())) {
-              const deviceName = device.name || 'Unknown Device';
-              const deviceType = device.type || 'N/A';
-              const position = device.startUnit ? `U${device.startUnit}` : 'N/A';
-              const powerInfo = device.powerConsumption ? `${device.powerConsumption}W` : 'N/A';
-              
-              powerMappings.push([
-                rackName,
-                deviceName,
-                deviceType,
-                position,
-                powerInfo
-              ]);
-            }
+            allDevices.push({
+              ...device,
+              rackId: rackName
+            });
           });
         }
       });
     }
 
-    if (powerMappings.length > 0) {
+    // Filter sources: type === 'pdu' || type === 'ups'
+    const powerSources = allDevices.filter(d => d.type === 'pdu' || d.type === 'ups');
+    const consumers = allDevices.filter(d => !(d.type === 'pdu' || d.type === 'ups'));
+
+    if (powerSources.length > 0) {
       this.applyStyle(pdf, 'body', 'textMuted');
-      pdf.text(`Generated power mapping table with ${powerMappings.length} power-related devices:`, this.pageMargin, yPos);
+      pdf.text(`Power Sources Found: ${powerSources.length} PDU/UPS devices`, this.pageMargin, yPos);
       yPos += 8;
-      
-      yPos = this.addTable(pdf, powerMappings, yPos, ['Rack', 'Device', 'Type', 'Position', 'Power']);
+
+      // Build tables for each power source
+      powerSources.forEach(src => {
+        const ports = (src.outlets?.map(String)) ?? Array.from({length: 24}, (_, i) => (i + 1).toString());
+        const powerMappings = ports.map(port => {
+          const c = consumers.find(x => x.power?.sourceId === src.id && String(x.power?.port) === port);
+          return [
+            port,
+            c?.name ?? '',
+            c?.rackId ?? '',
+            c ? `U${c.startU}` : ''
+          ];
+        });
+
+        // Add source header
+        this.applyStyle(pdf, 'heading', 'h4');
+        pdf.text(`${src.name} (${src.type.toUpperCase()})`, this.pageMargin, yPos);
+        yPos += 12;
+
+        // Add per-port table
+        yPos = this.addTable(pdf, powerMappings, yPos, ['Port', 'Connected Device', 'Rack', 'Position']);
+        yPos += 10;
+      });
     } else {
       this.applyStyle(pdf, 'body', 'secondary');
-      pdf.text('No power outlet mapping data or images available', this.pageMargin, yPos);
+      pdf.text('No PDU or UPS devices found for power outlet mapping', this.pageMargin, yPos);
       yPos += 15;
     }
 

@@ -33,31 +33,18 @@ const DEVICE_TYPE_COLORS = {
 };
 
 /**
- * Generate consistent color for device based on its type and power source
- * Falls back to device-specific color if type is not recognized
+ * Generate deterministic unique color for each device
+ * Uses device name/id for consistent hash-based colors
  */
-function colorForDevice(device) {
-  const deviceType = device.type?.toLowerCase() || 'default';
-  
-  // Check if we have a predefined color for this device type
-  if (DEVICE_TYPE_COLORS[deviceType]) {
-    return DEVICE_TYPE_COLORS[deviceType];
-  }
-  
-  // Fallback to device-specific color generation for unknown types
-  const deviceKey = device.id || device.name || 'unknown';
+function colorForDevice(deviceKey) {
   let h = 0;
-  for (let i = 0; i < deviceKey.length; i++) {
-    h = (h * 31 + deviceKey.charCodeAt(i)) >>> 0;
+  const key = String(deviceKey || 'unknown');
+  for (let i = 0; i < key.length; i++) {
+    h = (h * 31 + key.charCodeAt(i)) >>> 0;
   }
-  
   const hue = h % 360;
-  const sat = 55;
-  const light = 45; // Darker for better contrast
-  
-  const bg = `hsl(${hue} ${sat}% ${light}%)`;
-  const fg = '#ffffff'; // Always white text for better contrast
-  
+  const bg = `hsl(${hue} 62% 58%)`;
+  const fg = '#111';
   return { bg, fg };
 }
 
@@ -66,16 +53,14 @@ function colorForDevice(device) {
  */
 const DeviceBlock = ({ device, onClick }) => {
   const unitSpan = device.unitSpan || device.rack_units || 1;
-  const colors = colorForDevice(device);
+  const colors = colorForDevice(device.id || device.name);
   
   return (
     <div
       className="device"
       style={{
         '--u': unitSpan,
-        '--bg': colors.bg,
-        '--fg': colors.fg,
-        gridRow: `span ${unitSpan}`,
+        '--start': device.gridRowStart,
         backgroundColor: colors.bg,
         color: colors.fg,
       }}
@@ -198,57 +183,45 @@ const RackDiagram = ({
       <div 
         className="rack"
         style={{
-          '--ruH': '24px',
+          '--ruH': '18px',
+          position: 'relative',
+          display: 'grid',
           gridTemplateRows: `repeat(${rackHeight}, var(--ruH))`,
+          gridAutoFlow: 'row',
         }}
       >
-        {/* Unit Numbers */}
-        <div className="unit-numbers">
+        {/* Left RU Number Bar */}
+        <div className="ru-bar">
           {units.map(unitNum => (
-            <div key={unitNum} className="unit-number">
-              {unitNum}
-            </div>
+            <span key={unitNum}>{unitNum}</span>
+          ))}
+        </div>
+        
+        {/* Right RU Tick Bar */}
+        <div className="ru-bar-right">
+          {units.map((unitNum, index) => (
+            <span key={unitNum} className={index % 5 === 4 ? 'major-tick' : ''}></span>
           ))}
         </div>
         
         {/* Rack Content */}
         <div className="rack-content">
-          {/* Render all units in order, showing devices only where they actually exist */}
-          {units.map(unitNum => {
-            const device = devicesByUnit[unitNum];
+          {devices.map(device => {
+            const startU = device.startUnit || 1;
+            const uHeight = device.unitSpan || device.rack_units || 1;
+            const start = 46 - startU; // Convert to CSS Grid position (top is 45U, bottom is 1U)
             
-            if (device) {
-              // Only render device block at its starting unit
-              const isStartUnit = device.startUnit === unitNum;
-              if (isStartUnit) {
-                const unitSpan = device.unitSpan || device.rack_units || 1;
-                const gridRowStart = rackHeight - unitNum + 1;
-                
-                return (
-                  <div
-                    key={`device-${device.id}-${unitNum}`}
-                    style={{
-                      gridRowStart,
-                      gridRowEnd: `span ${unitSpan}`,
-                    }}
-                  >
-                    <DeviceBlock
-                      device={device}
-                      onClick={() => handleDeviceClick(device)}
-                    />
-                  </div>
-                );
-              }
-              // Device continues from previous unit - render nothing (space already occupied)
-              return null;
-            }
-            
-            // Empty unit - show available space
             return (
-              <div
-                key={`empty-${unitNum}`}
-                className="empty-unit"
-                title={`Unit ${unitNum} - Available`}
+              <DeviceBlock
+                key={device.id}
+                device={{
+                  ...device,
+                  gridRowStart: start
+                }}
+                onClick={() => handleDeviceClick(device)}
+                style={{
+                  gridRow: `${start} / span ${uHeight}`,
+                }}
               />
             );
           })}

@@ -257,10 +257,13 @@ Special Stations:
   // PDF Export with html2pdf exact specifications
   const exportPDF = async () => {
     try {
-      // Wait for fonts to load
+      // Wait for fonts to load and double RAF to settle layout
       if (document.fonts) {
         await document.fonts.ready;
       }
+      
+      // Double RAF to settle layout
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
       const html2pdf = (await import('html2pdf.js')).default;
       const element = document.querySelector('#inventory-print');
