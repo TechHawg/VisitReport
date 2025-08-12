@@ -20,26 +20,44 @@ const consolidatePhotos = (reportData) => {
   
   // Add photos from pictures.dataCloset
   if (reportData.pictures?.dataCloset && Array.isArray(reportData.pictures.dataCloset)) {
-    allPhotos.push(...reportData.pictures.dataCloset.map(photo => ({
-      ...photo,
-      category: 'Data Closet'
-    })));
+    allPhotos.push(...reportData.pictures.dataCloset.map(photo => {
+      const title = photo.title || photo.name || '';
+      const lower = title.toLowerCase();
+      const isLayout = lower.includes('layout') || lower.includes('diagram') || lower.includes('schematic');
+      return {
+        ...photo,
+        title,
+        // Prefer rack_layout for diagram-like names so the PDF picks them up
+        category: isLayout ? 'rack_layout' : 'rack',
+        location: photo.location || 'data closet'
+      };
+    }));
   }
   
   // Add photos from pictures.trainingRoom
   if (reportData.pictures?.trainingRoom && Array.isArray(reportData.pictures.trainingRoom)) {
     allPhotos.push(...reportData.pictures.trainingRoom.map(photo => ({
       ...photo,
-      category: 'Training Room'
+      title: photo.title || photo.name,
+      // Normalize to categories the PDF service recognizes for training images
+      category: 'training',
+      location: photo.location || 'training room'
     })));
   }
   
   // Add photos from dataCloset.photos
   if (reportData.dataCloset?.photos && Array.isArray(reportData.dataCloset.photos)) {
-    allPhotos.push(...reportData.dataCloset.photos.map(photo => ({
-      ...photo,
-      category: 'Data Closet'
-    })));
+    allPhotos.push(...reportData.dataCloset.photos.map(photo => {
+      const title = photo.title || photo.name || '';
+      const lower = title.toLowerCase();
+      const isLayout = lower.includes('layout') || lower.includes('diagram') || lower.includes('schematic');
+      return {
+        ...photo,
+        title,
+        category: isLayout ? 'rack_layout' : 'rack',
+        location: photo.location || 'data closet'
+      };
+    }));
   }
   
   return allPhotos;
@@ -58,7 +76,8 @@ const extractRacksFromDataCloset = (dataCloset) => {
         location.racks.forEach(rack => {
           racks.push({
             ...rack,
-            location: location.name || `Location ${index + 1}`,
+            // Normalize property name to what the PDF expects
+            locationName: location.name || `Location ${index + 1}`,
             id: rack.id || `${location.name || 'location'}-rack-${rack.name || index}`
           });
         });
@@ -72,7 +91,7 @@ const extractRacksFromDataCloset = (dataCloset) => {
         locationData.racks.forEach(rack => {
           racks.push({
             ...rack,
-            location: locationName,
+            locationName,
             id: rack.id || `${locationName}-rack-${rack.name || 'unnamed'}`
           });
         });
@@ -299,18 +318,24 @@ const Header = () => {
         officeHardware: reportData.officeHardware || [],
         ...reportData.infrastructure
       },
+      // Flatten SCCM data to what PDF expects as a primary source
+      sccmData: (reportData.sccmPCs?.computers || reportData.sccmPCs || []),
       
       // Data closet information
       dataCloset: reportData.dataCloset || {},
       
       // Inventory management
       inventory: reportData.inventory || {},
+      // Special stations convenience (some sections read from here)
+      specialStations: reportData.inventory?.specialStations || reportData.specialStations || {},
       
       // Recycling information
       recycling: reportData.recycling || {},
       
       // Environmental data from data closet
       environmental: reportData.dataCloset?.environmental || reportData.environmental || {},
+      // Also provide alias used by PDF service
+      environmentData: reportData.dataCloset?.environmental || reportData.environmental || {},
       
       // Power systems and network infrastructure
       powerSystems: reportData.powerSystems || {},

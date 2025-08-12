@@ -220,7 +220,10 @@ class PDFReportService {
       divider = true
     } = options;
     
-    let yPos = this.checkPageBreak(pdf, yPosition, 40);
+    // Prevent orphaned headings: ensure room for header + some body content
+    const headerEstimated = 30; // title + optional subtitle + divider
+    const previewContent = 60;  // minimum content space to keep with header
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, headerEstimated, previewContent);
     
     // Background for major sections
     if (background || style === 'major') {
@@ -403,7 +406,7 @@ class PDFReportService {
         title = 'RSS Visit Report',
         includePhotos = true,
         includeRackDiagrams = true,
-        format = 'a4',
+        format = 'letter',
         orientation = 'portrait'
       } = options;
 
@@ -413,6 +416,11 @@ class PDFReportService {
         unit: 'mm',
         format
       });
+
+      // Sync layout metrics with actual page size
+      const { width, height } = pdf.internal.pageSize;
+      this.pageWidth = width;
+      this.pageHeight = height;
 
       let currentPage = 1;
       let yPosition = this.pageMargin;
@@ -445,6 +453,21 @@ class PDFReportService {
 
       // 9. SCCM PC Management Table
       yPosition = this.addSCCMPCManagementTable(pdf, reportData, yPosition);
+
+      // 10. Recycling (if present)
+      if (reportData.recycling && (reportData.recycling.broughtBack?.length || reportData.recycling.pickupRequired?.length)) {
+        yPosition = this.addRecyclingSection(pdf, reportData, yPosition);
+      }
+
+      // 11. Power Systems (if present)
+      if (reportData.powerSystems && Object.keys(reportData.powerSystems).length > 0) {
+        yPosition = this.addEnhancedPowerSystemsSection(pdf, reportData.powerSystems, yPosition);
+      }
+
+      // 12. Network Infrastructure (if present)
+      if (reportData.networkInfrastructure && Object.keys(reportData.networkInfrastructure).length > 0) {
+        yPosition = this.addEnhancedNetworkInfrastructureSection(pdf, reportData.networkInfrastructure, yPosition);
+      }
 
       // Add footer to all pages
       this.addFooters(pdf, reportData);
@@ -590,7 +613,7 @@ class PDFReportService {
     
     // Clean title with enhanced styling - remove symbols
     this.applyStyle(pdf, 'title', 'primary');
-    const cleanTitle = title.replace(/[^\w\s]/g, ''); // Remove all symbols
+    const cleanTitle = title.replace(/[^\w\s]/g, ''); // Remove all symbols (avoid emoji artifacts)
     pdf.text(cleanTitle, this.pageMargin, yPos);
     yPos += 16;
     
@@ -600,9 +623,23 @@ class PDFReportService {
     yPos += 12;
     
     // Metadata in professional card layout
-    const metadataCardHeight = 35;
+    // Dynamically size metadata card based on content
+    const leftWidth = (this.pageWidth - (this.pageMargin * 2)) / 2 - 42;
+    const rightWidth = leftWidth;
+    // Precompute visit/next visit strings for measurement
+    const measureAssessmentDate = new Date(reportData.visitDate || Date.now());
+    const measureNextVisit = new Date(measureAssessmentDate);
+    measureNextVisit.setDate(measureNextVisit.getDate() + 90);
+    const visitMeasureText = measureAssessmentDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const nextMeasureText = measureNextVisit.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const locLines = pdf.splitTextToSize(reportData.location?.name || 'N/A', leftWidth);
+    const techLines = pdf.splitTextToSize(reportData.technician?.name || reportData.technician || this.getTechnicianName(), rightWidth);
+    const dateLines = pdf.splitTextToSize(visitMeasureText, leftWidth);
+    const nextLines = pdf.splitTextToSize(nextMeasureText, rightWidth);
+    const linesPerRow = Math.max(locLines.length, techLines.length, dateLines.length, nextLines.length);
+    const dynamicHeight = 12 + Math.max(22, linesPerRow * 6 + 8);
     const cardArea = this.drawCard(pdf, this.pageMargin, yPos, 
-      this.pageWidth - (this.pageMargin * 2), metadataCardHeight, {
+      this.pageWidth - (this.pageMargin * 2), dynamicHeight, {
         backgroundColor: 'white',
         shadow: true
       });
@@ -655,8 +692,16 @@ class PDFReportService {
     pdf.text(nextVisitDateFormatted, rightColumn + 42, bottomRowY);
     
     // Calculate the true bottom of the header content and add professional spacing
-    return yPos + metadataCardHeight + 15;
+    return yPos + dynamicHeight + 15;
   }
+  /**
+   * Strip non-ASCII characters to avoid odd glyphs in some PDF viewers
+   */
+  sanitizeText(text) {
+    if (!text) return '';
+    return String(text).replace(/[\u007F-\uFFFF]/g, '');
+  }
+
 
   /**
    * Add summary section (renamed from Executive Summary)
@@ -690,7 +735,7 @@ class PDFReportService {
    * Add Office Assessment Grades section
    */
   addOfficeAssessmentGrades(pdf, reportData, yPosition) {
-    let yPos = this.checkPageBreak(pdf, yPosition, 50);
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, 40, 80);
 
     // Section title
     this.applyStyle(pdf, 'sectionHeader', 'primary');
@@ -746,7 +791,7 @@ class PDFReportService {
    * Add Data Closet Assessment
    */
   addDataClosetAssessment(pdf, reportData, yPosition) {
-    let yPos = this.checkPageBreak(pdf, yPosition, 30);
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, 30, 80);
 
     // Subsection title
     this.applyStyle(pdf, 'subHeader', 'primary');
@@ -754,10 +799,12 @@ class PDFReportService {
     yPos += 10;
 
     // Assessment content
-    if (reportData.dataClosetAssessment) {
+    // Accept assessment from multiple possible fields
+    const assessmentInput = reportData.dataClosetAssessment || reportData.dataCloset?.assessment || reportData.dataCloset?.notes;
+    if (assessmentInput) {
       this.applyStyle(pdf, 'body', 'text');
-      const assessmentText = typeof reportData.dataClosetAssessment === 'string' 
-        ? reportData.dataClosetAssessment 
+      const assessmentText = typeof assessmentInput === 'string' 
+        ? assessmentInput 
         : 'Data closet assessment completed successfully.';
       
       const lines = pdf.splitTextToSize(assessmentText, this.pageWidth - (this.pageMargin * 2));
@@ -770,6 +817,24 @@ class PDFReportService {
       this.applyStyle(pdf, 'body', 'secondary');
       pdf.text('No data closet assessment information available', this.pageMargin, yPos);
       yPos += 6;
+    }
+
+    // Include Data Closet grading scores and comments if available
+    const grading = reportData.dataCloset?.grading;
+    const overall = reportData.dataCloset?.overallScore || reportData.dataCloset?.score;
+    if (overall) {
+      yPos = this.checkPageBreak(pdf, yPos, 8);
+      this.applyStyle(pdf, 'body', 'text');
+      pdf.text(`Overall Score: ${overall}%`, this.pageMargin, yPos);
+      yPos += 8;
+    }
+    if (Array.isArray(grading) && grading.length > 0) {
+      const rows = grading
+        .filter(g => g && (g.category || g.score || g.comments))
+        .map(g => [g.category || 'Category', String(g.score ?? ''), g.comments || '']);
+      if (rows.length > 0) {
+        yPos = this.addTable(pdf, rows, yPos, ['Category', 'Score', 'Comments']);
+      }
     }
 
     return yPos + 10;
@@ -810,7 +875,7 @@ class PDFReportService {
    * Add Inventory Table - Enhanced with multiple data structure support
    */
   addInventoryTable(pdf, reportData, yPosition) {
-    let yPos = this.checkSectionPageBreak(pdf, yPosition, 40, 80);
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, 40, 100);
 
     // Section title
     this.applyStyle(pdf, 'sectionHeader', 'primary');
@@ -893,10 +958,14 @@ class PDFReportService {
       if (Array.isArray(reportData.specialStations)) {
         specialStations = reportData.specialStations.filter(station => station && station.trim());
       } else if (typeof reportData.specialStations === 'object') {
-        // Convert object to array format
+        // Convert object to array format with humanized labels
+        const prettify = s => s
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/^./, str => str.toUpperCase())
+          .trim();
         specialStations = Object.entries(reportData.specialStations)
           .filter(([key, value]) => value > 0)
-          .map(([key, value]) => `${key}: ${value}`)
+          .map(([key, value]) => `${prettify(key)}: ${value}`)
           .filter(station => station && station.trim());
       } else if (typeof reportData.specialStations === 'string') {
         specialStations = [reportData.specialStations];
@@ -913,6 +982,16 @@ class PDFReportService {
         });
       specialStations = [...specialStations, ...inventoryStations];
     }
+
+    // De-duplicate by normalized key
+    const seen = new Set();
+    const normalize = s => s.toLowerCase().replace(/\s+/g, '').replace(/[:]/g, '');
+    specialStations = specialStations.filter(station => {
+      const key = normalize(station.split(':')[0] || station);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
     if (specialStations.length > 0) {
       this.applyStyle(pdf, 'body', 'text');
@@ -1109,9 +1188,7 @@ class PDFReportService {
       pdf.text(`Found ${trainingRoomPhotos.length} training room ${trainingRoomPhotos.length === 1 ? 'photo' : 'photos'}:`, this.pageMargin, yPos);
       yPos += 8;
       
-      for (const photo of trainingRoomPhotos) {
-        yPos = await this.addPhoto(pdf, photo, yPos);
-      }
+      yPos = await this.addPhotoGrid(pdf, trainingRoomPhotos, yPos);
     } else {
       // More specific fallback message
       this.applyStyle(pdf, 'body', 'secondary');
@@ -1148,8 +1225,18 @@ class PDFReportService {
     yPos = this.drawSectionDivider(pdf, yPos);
     yPos += 10;
 
-    if (reportData.sccmData && reportData.sccmData.length > 0) {
-      const sccmTableData = reportData.sccmData.map(pc => [
+    const sccmList = (reportData.sccmData && Array.isArray(reportData.sccmData))
+      ? reportData.sccmData
+      : (reportData.infrastructure?.sccmPCs || reportData.sccmPCs || []).map(pc => ({
+          computerName: pc.name || pc.computerName,
+          operatingSystem: pc.os || pc.operatingSystem,
+          lastSeen: pc.lastSeen,
+          status: pc.sccmStatus || pc.status,
+          compliance: pc.compliance
+        }));
+
+    if (sccmList && sccmList.length > 0) {
+      const sccmTableData = sccmList.map(pc => [
         pc.computerName || 'N/A',
         pc.operatingSystem || 'N/A',
         pc.lastSeen || 'N/A',
@@ -1170,7 +1257,7 @@ class PDFReportService {
    * Add Rack Layout Pictures - Enhanced filtering and display
    */
   async addRackLayoutPictures(pdf, reportData, yPosition) {
-    let yPos = yPosition;
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, 20, 80);
 
     this.applyStyle(pdf, 'subHeader', 'secondary');
     pdf.text('Rack Layout Diagrams:', this.pageMargin, yPos);
@@ -1190,6 +1277,12 @@ class PDFReportService {
       return yPos + 5;
     }
 
+    // Programmatic fallback: grid of rack diagrams grouped by location
+    if (reportData.racks && reportData.racks.length > 0) {
+      yPos = this.addRackDiagramsGrid(pdf, reportData, yPos);
+      return yPos + 5;
+    }
+
     // Fallback to uploaded rack layout photos
     const rackLayoutPhotos = (reportData.photos || []).filter(photo => {
       if (!photo) return false;
@@ -1201,7 +1294,7 @@ class PDFReportService {
       
       // Secondary filtering based on description and title
       const desc = (photo.description || '').toLowerCase();
-      const title = (photo.title || '').toLowerCase();
+      const title = (photo.title || photo.name || '').toLowerCase();
       
       const layoutKeywords = ['layout', 'diagram', 'floor plan', 'schematic', 'blueprint'];
       const hasLayoutKeyword = layoutKeywords.some(keyword => 
@@ -1220,10 +1313,7 @@ class PDFReportService {
       this.applyStyle(pdf, 'body', 'textMuted');
       pdf.text(`Found ${rackLayoutPhotos.length} uploaded ${rackLayoutPhotos.length === 1 ? 'diagram' : 'diagrams'}:`, this.pageMargin, yPos);
       yPos += 8;
-      
-      for (const photo of rackLayoutPhotos) {
-        yPos = await this.addPhoto(pdf, photo, yPos);
-      }
+      yPos = await this.addPhotoGrid(pdf, rackLayoutPhotos, yPos, { cols: 2, imageHeight: 70 });
     } else {
       this.applyStyle(pdf, 'body', 'secondary');
       pdf.text('No rack layout diagrams found. Please ensure rack visualizers are visible when generating the report.', this.pageMargin, yPos);
@@ -1237,7 +1327,7 @@ class PDFReportService {
    * Add Power Outlet Mapping - Enhanced filtering and display
    */
   async addPowerOutletMapping(pdf, reportData, yPosition) {
-    let yPos = yPosition;
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, 20, 80);
 
     this.applyStyle(pdf, 'subHeader', 'secondary');
     pdf.text('Power Outlet Mapping:', this.pageMargin, yPos);
@@ -1254,7 +1344,7 @@ class PDFReportService {
       
       // Secondary filtering based on description and title
       const desc = (photo.description || '').toLowerCase();
-      const title = (photo.title || '').toLowerCase();
+      const title = (photo.title || photo.name || '').toLowerCase();
       
       const powerKeywords = ['power', 'outlet', 'electrical', 'ups', 'pdu', 'power distribution'];
       
@@ -1268,10 +1358,7 @@ class PDFReportService {
       this.applyStyle(pdf, 'body', 'textMuted');
       pdf.text(`Found ${powerOutletPhotos.length} power mapping ${powerOutletPhotos.length === 1 ? 'image' : 'images'}:`, this.pageMargin, yPos);
       yPos += 8;
-      
-      for (const photo of powerOutletPhotos) {
-        yPos = await this.addPhoto(pdf, photo, yPos);
-      }
+      yPos = await this.addPhotoGrid(pdf, powerOutletPhotos, yPos, { cols: 2, imageHeight: 70 });
     } else {
       // Generate power outlet mapping table from rack data
       yPos = this.addPowerOutletTable(pdf, reportData, yPos);
@@ -1333,7 +1420,7 @@ class PDFReportService {
    * Add Device Information Tables for each rack - Enhanced with better positioning display
    */
   addDeviceInformationTables(pdf, reportData, yPosition) {
-    let yPos = yPosition;
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, 30, 80);
 
     this.applyStyle(pdf, 'subHeader', 'secondary');
     pdf.text('Device Information by Rack:', this.pageMargin, yPos);
@@ -1392,7 +1479,10 @@ class PDFReportService {
           pdf.text(`${deviceData.length} devices configured:`, this.pageMargin + 5, yPos);
           yPos += 6;
           
-          yPos = this.addTable(pdf, deviceData, yPos, ['Device Name', 'Type', 'Model', 'Status', 'Position', 'MAC Address']);
+      yPos = this.addTable(pdf, deviceData, yPos,
+        ['Device Name', 'Type', 'Model', 'Status', 'Position', 'MAC Address'],
+        [0.28, 0.14, 0.18, 0.14, 0.10, 0.16]
+      );
         } else {
           this.applyStyle(pdf, 'body', 'secondary');
           pdf.text('No devices found in this rack', this.pageMargin + 10, yPos);
@@ -1492,7 +1582,7 @@ class PDFReportService {
    * Add Rack Pictures - Enhanced category filtering and display
    */
   async addRackPictures(pdf, reportData, yPosition) {
-    let yPos = yPosition;
+    let yPos = this.checkSectionPageBreak(pdf, yPosition, 20, 80);
 
     this.applyStyle(pdf, 'subHeader', 'secondary');
     pdf.text('Rack Pictures:', this.pageMargin, yPos);
@@ -1509,7 +1599,7 @@ class PDFReportService {
       
       // Description-based filtering (excluding layout/diagram photos already shown)
       const desc = (photo.description || '').toLowerCase();
-      const title = (photo.title || '').toLowerCase();
+      const title = (photo.title || photo.name || '').toLowerCase();
       
       const hasRackKeyword = desc.includes('rack') || title.includes('rack');
       const isLayoutDiagram = desc.includes('layout') || desc.includes('diagram') || 
@@ -1524,10 +1614,7 @@ class PDFReportService {
       this.applyStyle(pdf, 'body', 'textMuted');
       pdf.text(`Found ${rackPhotos.length} rack ${rackPhotos.length === 1 ? 'photo' : 'photos'}:`, this.pageMargin, yPos);
       yPos += 8;
-      
-      for (const photo of rackPhotos) {
-        yPos = await this.addPhoto(pdf, photo, yPos);
-      }
+      yPos = await this.addPhotoGrid(pdf, rackPhotos, yPos);
     } else {
       this.applyStyle(pdf, 'body', 'secondary');
       pdf.text('No rack pictures available', this.pageMargin, yPos);
@@ -1535,6 +1622,61 @@ class PDFReportService {
     }
 
     return yPos + 5;
+  }
+
+  /**
+   * Auto-format photo grid (2 columns by default) with consistent card sizes
+   */
+  async addPhotoGrid(pdf, photos, yPosition, options = {}) {
+    const cols = options.cols || 2;
+    const gap = 6;
+    const availableWidth = this.pageWidth - (this.pageMargin * 2);
+    const cardWidth = (availableWidth - (gap * (cols - 1))) / cols;
+    const imageHeight = options.imageHeight || 65;
+    const titleHeight = 6;
+    const captionHeight = 6;
+    const padding = this.layout.cardPadding;
+    const cardHeight = imageHeight + titleHeight + captionHeight + padding * 2 + 6;
+    let yPos = yPosition;
+    
+    for (let i = 0; i < photos.length; i += cols) {
+      yPos = this.checkPageBreak(pdf, yPos, cardHeight + 4);
+      for (let c = 0; c < cols; c++) {
+        const photo = photos[i + c];
+        if (!photo) break;
+        const x = this.pageMargin + c * (cardWidth + gap);
+        const card = this.drawCard(pdf, x, yPos, cardWidth, cardHeight, { backgroundColor: 'white', shadow: true });
+        let cy = card.contentY;
+        
+        // Title
+        const title = this.sanitizeText(photo.title || photo.name || '');
+        if (title) {
+          this.applyStyle(pdf, 'captionBold', 'primary');
+          const t = pdf.splitTextToSize(title, card.contentWidth);
+          pdf.text(t[0], card.contentX, cy + 4);
+        }
+        cy += title ? 8 : 2;
+        
+        // Image frame
+        pdf.setDrawColor(...this.colors.border);
+        pdf.setLineWidth(0.5);
+        pdf.rect(card.contentX - 0.5, cy - 0.5, card.contentWidth + 1, imageHeight + 1, 'S');
+        
+        // Add image scaled to fit
+        await this.addImageWithRetry(pdf, photo, card.contentX, cy, card.contentWidth, imageHeight);
+        cy += imageHeight + 6;
+        
+        // Caption
+        const location = photo.location ? `Location: ${photo.location}` : '';
+        if (location) {
+          this.applyStyle(pdf, 'caption', 'textMuted');
+          const lc = pdf.splitTextToSize(this.sanitizeText(location), card.contentWidth);
+          pdf.text(lc[0], card.contentX, cy);
+        }
+      }
+      yPos += cardHeight + 4;
+    }
+    return yPos;
   }
 
   // Note: The following methods should still exist in the file: addPhoto, addTable, checkPageBreak
@@ -1888,7 +2030,7 @@ class PDFReportService {
                           this.pageWidth - (this.pageMargin * 2) + 6, 12, 'primary', 0.1);
     
     this.applyStyle(pdf, 'subHeader', 'primary');
-    pdf.text(`📟 ${rackTitle}`, this.pageMargin, yPos);
+    pdf.text(this.sanitizeText(`${rackTitle}`), this.pageMargin, yPos);
     yPos += 15;
 
     // Try to capture rack visualization from DOM
@@ -1919,42 +2061,8 @@ class PDFReportService {
       }
     } catch (error) {
       console.warn('Failed to capture rack diagram:', error);
-      
-      // Enhanced fallback: Add styled text-based rack representation
-      if (rack.devices && rack.devices.length > 0) {
-        // Fallback header
-        this.applyStyle(pdf, 'body', 'secondary');
-        pdf.text('📋 Rack Configuration (Text View):', this.pageMargin, yPos);
-        yPos += 10;
-
-        // Device list with better styling
-        rack.devices.slice(0, 10).forEach(device => {
-          yPos = this.checkPageBreak(pdf, yPos, 7);
-          const deviceText = `U${device.position || '?'}: ${device.name || device.type || 'Unknown Device'}`;
-          
-          // Add subtle background for each device entry
-          this.drawBackgroundBox(pdf, this.pageMargin, yPos - 2, 
-                                this.pageWidth - (this.pageMargin * 2), 6, 'light', 0.2);
-          
-          this.applyStyle(pdf, 'body');
-          pdf.text(deviceText, this.pageMargin + 8, yPos);
-          yPos += 7;
-        });
-
-        if (rack.devices.length > 10) {
-          yPos += 2;
-          this.applyStyle(pdf, 'caption', 'secondary');
-          pdf.text(`... and ${rack.devices.length - 10} more devices in this rack`, this.pageMargin + 8, yPos);
-          yPos += 8;
-        }
-      } else {
-        // No devices message
-        this.drawBackgroundBox(pdf, this.pageMargin - 3, yPos - 3, 
-                              this.pageWidth - (this.pageMargin * 2) + 6, 10, 'warning', 0.1);
-        this.applyStyle(pdf, 'body', 'warning');
-        pdf.text('⚠️ Rack diagram unavailable - No device configuration found', this.pageMargin, yPos);
-        yPos += 15;
-      }
+      // Draw from structured data instead of DOM capture
+      yPos = this.drawRackDiagramFromData(pdf, rack, yPos);
     }
 
     // Add professional rack details table
@@ -1984,6 +2092,220 @@ class PDFReportService {
     );
 
     return yPos + 15;
+  }
+
+  /**
+   * Programmatically draw a rack diagram from rack/devices data (no DOM required)
+   */
+  drawRackDiagramFromData(pdf, rack, yPosition) {
+    let yPos = this.checkPageBreak(pdf, yPosition, 120);
+    const rackHeightU = parseInt(rack.height || 42, 10);
+    const header = rack.locationName ? `${rack.name || 'Rack'} (${rack.locationName})` : (rack.name || 'Rack');
+
+    this.applyStyle(pdf, 'subHeader', 'primary');
+    pdf.text(this.sanitizeText(`${header}`), this.pageMargin, yPos);
+    yPos += 6;
+
+    // Diagram sizing
+    const maxWidth = this.pageWidth - (this.pageMargin * 2);
+    const diagramWidth = Math.min(120, maxWidth);
+    const maxDiagramHeight = 150; // mm allowed for diagram
+    let unitHeight = 3.5; // mm per U baseline (slightly taller for readability)
+    let totalHeight = rackHeightU * unitHeight;
+    if (totalHeight > maxDiagramHeight) {
+      const scale = maxDiagramHeight / totalHeight;
+      unitHeight *= scale;
+      totalHeight = rackHeightU * unitHeight;
+    }
+
+    // Outer rack frame
+    const x = this.pageMargin;
+    yPos = this.checkPageBreak(pdf, yPos, totalHeight + 24);
+    pdf.setDrawColor(...this.colors.border);
+    pdf.setLineWidth(0.6);
+    pdf.rect(x, yPos, diagramWidth, totalHeight);
+
+    // U grid (top is highest U)
+    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(...this.colors.borderLight);
+    pdf.setGState(pdf.GState({ opacity: 0.6 }));
+    for (let i = 1; i < rackHeightU; i++) {
+      const gy = yPos + (i * unitHeight);
+      pdf.line(x, gy, x + diagramWidth, gy);
+    }
+    pdf.setGState(pdf.GState({ opacity: 1 }));
+
+    // Devices blocks
+    const devices = Array.isArray(rack.devices) ? rack.devices : [];
+    devices.forEach(device => {
+      const start = this.parsePosition(device.startUnit || device.position || device.uPosition || 0);
+      const span = parseInt(device.unitSpan || device.heightU || 1, 10) || 1;
+      if (start <= 0) return;
+      const topFromBottom = (rackHeightU - (start + span - 1)) * unitHeight;
+      const dy = yPos + topFromBottom;
+      const dh = span * unitHeight;
+      const margin = 2;
+      const dx = x + margin;
+      const dw = diagramWidth - (margin * 2);
+
+      // Device block background
+      pdf.setFillColor(...this.colors.lightAlt);
+      pdf.rect(dx, dy, dw, dh, 'F');
+      pdf.setDrawColor(...this.colors.secondary);
+      pdf.setLineWidth(0.3);
+      pdf.rect(dx, dy, dw, dh);
+
+      // Label
+      this.applyStyle(pdf, 'caption', 'text');
+      const label = this.sanitizeText((device.name || device.deviceName || device.hostname || device.type || 'Device').toString());
+      // Center label vertically inside the block, with a small left padding
+      const textY = dy + (dh / 2) + 1.5;
+      const clipped = label.length > 40 ? label.slice(0, 37) + '…' : label;
+      pdf.text(clipped, dx + 2, textY);
+    });
+
+    yPos += totalHeight + 6;
+
+    // Specs table
+    const rackData = [
+      ['Rack Height', `${rackHeightU}U`],
+      ['Installed Devices', `${devices.length}`],
+    ];
+    if (rack.utilization != null) rackData.push(['Space Utilization', `${rack.utilization}%`]);
+    if (rack.powerDraw) rackData.push(['Power Consumption', `${rack.powerDraw}W`]);
+
+    yPos = this.addProfessionalTable(pdf, rackData, yPos, ['Specification', 'Value'], [0.6, 0.4], { headerBackground: false });
+
+    return yPos + 4;
+  }
+
+  /**
+   * Arrange racks in a responsive grid by location: 2 per row where possible
+   */
+  addRackDiagramsGrid(pdf, reportData, yPosition) {
+    let yPos = yPosition;
+    const racks = Array.isArray(reportData.racks) ? reportData.racks : [];
+    const byLocation = racks.reduce((acc, r) => {
+      const key = r.locationName || r.location || 'Unassigned';
+      (acc[key] ||= []).push(r);
+      return acc;
+    }, {});
+
+    Object.entries(byLocation).forEach(([locationName, locationRacks]) => {
+      // Location header on one line
+      this.applyStyle(pdf, 'subHeader', 'secondary');
+      yPos = this.checkSectionPageBreak(pdf, yPos, 18, 60);
+      pdf.text(this.sanitizeText(locationName), this.pageMargin, yPos);
+      yPos += 6;
+
+      // Layout: 2 columns per row
+      const gap = 8;
+      const availableWidth = this.pageWidth - (this.pageMargin * 2);
+      const colWidth = (availableWidth - gap) / 2;
+      let colIndex = 0;
+      let rowStartY = yPos;
+      let rowMaxHeight = 0;
+
+      const drawAt = (rack, x, y) => {
+        const beforePage = pdf.internal.getNumberOfPages();
+        const yAfter = this.drawRackDiagramFromDataAt(pdf, rack, x, y, colWidth);
+        const afterPage = pdf.internal.getNumberOfPages();
+        // If a page break happened, reset row tracking
+        if (afterPage !== beforePage) {
+          rowStartY = this.pageMargin + 15;
+          return rowStartY;
+        }
+        rowMaxHeight = Math.max(rowMaxHeight, yAfter - y);
+        return yAfter;
+      };
+
+      locationRacks.forEach((rack, idx) => {
+        const x = this.pageMargin + (colIndex === 0 ? 0 : (colWidth + gap));
+        const y = colIndex === 0 ? rowStartY : rowStartY;
+        const yAfter = drawAt(rack, x, y);
+        colIndex = (colIndex + 1) % 2;
+        if (colIndex === 0) {
+          // move to next row baseline
+          rowStartY = y + rowMaxHeight + 10;
+          yPos = rowStartY;
+          rowMaxHeight = 0;
+        }
+      });
+
+      if (colIndex === 1) {
+        // finalize dangling row
+        yPos = rowStartY + rowMaxHeight + 10;
+      }
+      yPos += 6;
+    });
+
+    return yPos;
+  }
+
+  /**
+   * Draw the rack diagram at a fixed x, and a constrained width
+   */
+  drawRackDiagramFromDataAt(pdf, rack, x, yPosition, maxWidth) {
+    let yPos = this.checkPageBreak(pdf, yPosition, 120);
+    const rackHeightU = parseInt(rack.height || 42, 10);
+    const header = rack.locationName ? `${rack.name || 'Rack'} (${rack.locationName})` : (rack.name || 'Rack');
+
+    this.applyStyle(pdf, 'captionBold', 'primary');
+    pdf.text(this.sanitizeText(`${header}`), x, yPos);
+    yPos += 4;
+
+    // Compute diagram sizes
+    const diagramWidth = Math.min(110, maxWidth);
+    const maxDiagramHeight = 145;
+    let unitHeight = 3.2;
+    let totalHeight = rackHeightU * unitHeight;
+    if (totalHeight > maxDiagramHeight) {
+      const scale = maxDiagramHeight / totalHeight;
+      unitHeight *= scale;
+      totalHeight = rackHeightU * unitHeight;
+    }
+
+    // Frame
+    yPos = this.checkPageBreak(pdf, yPos, totalHeight + 20);
+    pdf.setDrawColor(...this.colors.border);
+    pdf.setLineWidth(0.6);
+    pdf.rect(x, yPos, diagramWidth, totalHeight);
+
+    // Grid
+    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(...this.colors.borderLight);
+    pdf.setGState(pdf.GState({ opacity: 0.6 }));
+    for (let i = 1; i < rackHeightU; i++) {
+      const gy = yPos + (i * unitHeight);
+      pdf.line(x, gy, x + diagramWidth, gy);
+    }
+    pdf.setGState(pdf.GState({ opacity: 1 }));
+
+    // Devices
+    const devices = Array.isArray(rack.devices) ? rack.devices : [];
+    devices.forEach(device => {
+      const start = this.parsePosition(device.startUnit || device.position || device.uPosition || 0);
+      const span = parseInt(device.unitSpan || device.heightU || 1, 10) || 1;
+      if (start <= 0) return;
+      const topFromBottom = (rackHeightU - (start + span - 1)) * unitHeight;
+      const dy = yPos + topFromBottom;
+      const dh = span * unitHeight;
+      const margin = 1.5;
+      const dx = x + margin;
+      const dw = diagramWidth - (margin * 2);
+      pdf.setFillColor(...this.colors.lightAlt);
+      pdf.rect(dx, dy, dw, dh, 'F');
+      pdf.setDrawColor(...this.colors.secondary);
+      pdf.setLineWidth(0.25);
+      pdf.rect(dx, dy, dw, dh);
+      this.applyStyle(pdf, 'caption', 'text');
+      const label = this.sanitizeText((device.name || device.deviceName || device.hostname || device.type || 'Device').toString());
+      const clipped = label.length > 36 ? label.slice(0, 33) + '…' : label;
+      const textY = dy + (dh / 2) + 1.2;
+      pdf.text(clipped, dx + 1.5, textY);
+    });
+
+    return yPos + totalHeight + 8;
   }
 
   /**
@@ -2870,8 +3192,8 @@ class PDFReportService {
     let yPos = this.checkPageBreak(pdf, yPosition, 50);
     
     // Section header
-    pdf.setFontSize(14);
-    pdf.setFont(this.font, 'bold');
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
     pdf.text('🌐 Network Infrastructure', this.pageMargin, yPos);
     yPos += 15;
     
@@ -2915,7 +3237,7 @@ class PDFReportService {
       yPos += 15;
       
       // Add placeholder content
-      pdf.setFont(this.font, 'normal');
+      pdf.setFont('helvetica', 'normal');
       pdf.text('• Switch Status: Not monitored', this.pageMargin + 10, yPos);
       yPos += 12;
       pdf.text('• Router Health: Not assessed', this.pageMargin + 10, yPos);
@@ -2937,7 +3259,7 @@ class PDFReportService {
       pdf.rect(this.pageMargin, yPos, tableWidth, 20, 'F');
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(10);
-      pdf.setFont(this.font, 'bold');
+      pdf.setFont('helvetica', 'bold');
       pdf.text('Component', this.pageMargin + 5, yPos + 13);
       pdf.text('Status', this.pageMargin + colWidths[0] + 5, yPos + 13);
       pdf.text('Health', this.pageMargin + colWidths[0] + colWidths[1] + 5, yPos + 13);
@@ -3004,7 +3326,7 @@ class PDFReportService {
       pdf.setTextColor(0, 0, 0);
       pdf.text('Network Health Summary:', this.pageMargin + 10, yPos + 12);
       
-      pdf.setFont(this.font, 'normal');
+      pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
       let summaryText = '';
       
@@ -3105,103 +3427,92 @@ class PDFReportService {
     const rowHeight = this.layout.tableRowHeight;
     const headerHeight = this.layout.tableHeaderHeight;
 
-    // Modern card-style table container
-    if (cardStyle || borderStyle === 'modern') {
-      const tableHeight = (data.length + (headers.length > 0 ? 1 : 0)) * rowHeight + headerHeight + 10;
-      this.drawBackgroundBox(pdf, this.pageMargin - 4, yPos - 5, 
-                            availableWidth + 8, tableHeight, 'white', 1, {
-        border: true,
-        borderColor: 'border',
-        shadow: true
-      });
-    }
-
-    // Professional headers
-    if (headers.length > 0) {
-      // Header background with gradient effect
+    // Elastic table with header repeat and multi-line cells
+    const drawHeader = () => {
+      if (headers.length === 0) return;
       if (headerBackground) {
         pdf.setFillColor(...this.colors.tableHeader);
         pdf.rect(this.pageMargin, yPos, availableWidth, headerHeight, 'F');
-        
-        // Subtle gradient overlay
         pdf.setFillColor(...this.colors.primaryLight);
         pdf.setGState(pdf.GState({ opacity: 0.1 }));
         pdf.rect(this.pageMargin, yPos, availableWidth, headerHeight/2, 'F');
         pdf.setGState(pdf.GState({ opacity: 1 }));
       }
-      
       this.applyStyle(pdf, 'tableHeader', 'white');
-      
-      let xPos = this.pageMargin + 6;
-      headers.forEach((header, index) => {
-        pdf.text(header, xPos, yPos + headerHeight/2 + 2);
-        xPos += colWidths[index];
-      });
-      
-      yPos += headerHeight;
-      
-      // Professional header separator with subtle gradient
+      let x = this.pageMargin + 6;
+      headers.forEach((h, i) => { pdf.text(h, x, yPos + headerHeight/2 + 2); x += colWidths[i]; });
+      yPos += headerHeight + 3;
+      // header separator
       pdf.setDrawColor(...this.colors.primary);
-      pdf.setLineWidth(1.5);
+      pdf.setLineWidth(1.2);
       pdf.line(this.pageMargin, yPos, this.pageWidth - this.pageMargin, yPos);
-      
-      pdf.setDrawColor(...this.colors.accent);
-      pdf.setLineWidth(0.5);
-      pdf.line(this.pageMargin, yPos + 0.5, this.pageMargin + availableWidth * 0.4, yPos + 0.5);
-      
-      yPos += 3;
-    }
+      yPos += 2;
+    };
 
-    // Data rows with enhanced styling
+    const drawPageCard = () => {
+      if (!(cardStyle || borderStyle === 'modern')) return;
+      const pageBottom = this.pageHeight - (this.layout.footerHeight + 12);
+      const height = pageBottom - yPos;
+      if (height > 8) {
+        this.drawBackgroundBox(pdf, this.pageMargin - 4, yPos - headerHeight - 5,
+          availableWidth + 8, height + headerHeight + 5, 'white', 1,
+          { border: true, borderColor: 'border', shadow: true });
+      }
+    };
+
+    // Ensure room for header + at least one row before drawing
+    const firstRowH = this.layout.tableRowHeight + 10;
+    yPos = this.checkSectionPageBreak(pdf, yPos, this.layout.tableHeaderHeight, firstRowH);
+    drawHeader();
+    if ((cardStyle || borderStyle === 'modern') && data.length <= 12) drawPageCard();
+
     this.applyStyle(pdf, 'tableBody');
-    data.forEach((row, rowIndex) => {
-      yPos = this.checkPageBreak(pdf, yPos, rowHeight);
-      
-      // Alternating row backgrounds with enhanced colors
-      if (alternateRowColors && zebraStripe && rowIndex % 2 === 1) {
+    const lineH = 5;
+    data.forEach((row, rIdx) => {
+      // compute wrapped lines per cell
+      const cellLines = row.map((cell, i) => {
+        const text = String(cell ?? '');
+        const width = colWidths[i] - 8;
+        return pdf.splitTextToSize(text, width);
+      });
+      const maxLines = Math.max(...cellLines.map(l => l.length)) || 1;
+      const dynamicRowH = Math.max(rowHeight, maxLines * lineH + 4);
+
+      const beforePages = pdf.internal.getNumberOfPages();
+      const proposedY = this.checkPageBreak(pdf, yPos, dynamicRowH + 6);
+      const afterPages = pdf.internal.getNumberOfPages();
+      if (proposedY !== yPos || afterPages > beforePages) {
+        yPos = proposedY;
+        drawHeader();
+        if ((cardStyle || borderStyle === 'modern') && data.length <= 12) drawPageCard();
+      }
+
+      if (alternateRowColors && zebraStripe && rIdx % 2 === 1) {
         pdf.setFillColor(...this.colors.lightAlt);
         pdf.setGState(pdf.GState({ opacity: 0.5 }));
-        pdf.rect(this.pageMargin, yPos - 1, availableWidth, rowHeight, 'F');
+        pdf.rect(this.pageMargin, yPos - 1, availableWidth, dynamicRowH, 'F');
         pdf.setGState(pdf.GState({ opacity: 1 }));
       }
-      
-      let xPos = this.pageMargin + 6;
-      row.forEach((cell, index) => {
-        if (index < colWidths.length) {
-          // Handle status indicators
-          if (index === statusColumn && cell) {
-            const indicatorWidth = this.drawStatusIndicator(pdf, xPos, yPos + 2, cell);
-            xPos += indicatorWidth;
-            
-            this.applyStyle(pdf, 'tableBody');
-            const cellText = pdf.splitTextToSize(String(cell || ''), colWidths[index] - indicatorWidth - 8);
-            pdf.text(cellText[0] || '', xPos, yPos + rowHeight/2 + 1);
-          } else {
-            const cellText = pdf.splitTextToSize(String(cell || ''), colWidths[index] - 8);
-            pdf.text(cellText[0] || '', xPos, yPos + rowHeight/2 + 1);
-          }
-          xPos += colWidths[index];
+
+      let x = this.pageMargin + 6;
+      cellLines.forEach((lines, i) => {
+        // status indicator support remains for designated column
+        let leftPad = 0;
+        if (i === statusColumn && row[i]) {
+          leftPad = this.drawStatusIndicator(pdf, x, yPos + 2, row[i]);
         }
+        lines.forEach((ln, k) => pdf.text(ln, x + leftPad, yPos + 6 + k * lineH));
+        x += colWidths[i];
       });
-      
-      // Subtle row separator for better readability
-      if (rowIndex < data.length - 1) {
-        pdf.setDrawColor(...this.colors.borderLight);
-        pdf.setLineWidth(0.2);
-        pdf.line(this.pageMargin + 5, yPos + rowHeight - 1, this.pageWidth - this.pageMargin - 5, yPos + rowHeight - 1);
-      }
-      
-      yPos += rowHeight;
+
+      pdf.setDrawColor(...this.colors.borderLight);
+      pdf.setLineWidth(0.2);
+      pdf.line(this.pageMargin + 5, yPos + dynamicRowH - 1, this.pageWidth - this.pageMargin - 5, yPos + dynamicRowH - 1);
+
+      yPos += dynamicRowH;
     });
 
-    // Professional table footer
-    if (borderStyle === 'modern' || cardStyle) {
-      pdf.setDrawColor(...this.colors.border);
-      pdf.setLineWidth(1);
-      pdf.line(this.pageMargin, yPos + 2, this.pageWidth - this.pageMargin, yPos + 2);
-    }
-
-    return yPos + 12;
+    return yPos + 10;
   }
 
   /**
@@ -3435,7 +3746,7 @@ class PDFReportService {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // Detect image format and process URL
-        const imageData = await this.processImageUrl(photo.url);
+        const imageData = await this.processImageSource(photo);
         
         if (imageData.success) {
           pdf.addImage(imageData.dataUrl, imageData.format, x, y, width, height);
@@ -3464,8 +3775,42 @@ class PDFReportService {
   /**
    * Process image URL and convert to appropriate format for PDF
    */
-  async processImageUrl(url) {
+  async processImageSource(photoOrUrl) {
+    const url = typeof photoOrUrl === 'string' ? photoOrUrl : (photoOrUrl?.url || '');
     try {
+      // Prefer DOM extraction for blob: URLs (fetch will fail / taint)
+      if (url.startsWith('blob:')) {
+        const domData = this.tryGetDataUrlFromImgElement(url);
+        if (domData) {
+          return { success: true, dataUrl: domData, format: this.detectImageFormat(domData) };
+        }
+        // If we have a file object alongside the blob url, use it
+        if (photoOrUrl && typeof photoOrUrl === 'object' && photoOrUrl.file instanceof Blob) {
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(photoOrUrl.file);
+          });
+          return { success: true, dataUrl, format: this.detectImageFormat(dataUrl) };
+        }
+        return { success: false, error: 'Unresolvable blob URL' };
+      }
+      // If file object is present (from PhotoUpload), read directly
+      if (photoOrUrl && typeof photoOrUrl === 'object' && photoOrUrl.file instanceof Blob) {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(photoOrUrl.file);
+        });
+        return {
+          success: true,
+          dataUrl,
+          format: this.detectImageFormat(dataUrl)
+        };
+      }
+      
       // Handle data URLs (base64 encoded images)
       if (url.startsWith('data:')) {
         const format = this.detectImageFormat(url);
@@ -3476,19 +3821,26 @@ class PDFReportService {
         };
       }
       
-      // Handle blob URLs or object URLs
-      if (url.startsWith('blob:')) {
-        const imageData = await this.convertBlobToDataUrl(url);
-        return {
-          success: true,
-          dataUrl: imageData.dataUrl,
-          format: imageData.format
-        };
-      }
-      
       // Handle HTTP/HTTPS URLs with CORS support
       if (url.startsWith('http')) {
-        const imageData = await this.loadImageWithCORS(url);
+        // Try to proxy via same-origin API to avoid CORS/tainting if available
+        let imageData;
+        try {
+          const proxied = await enhancedAuthService.apiRequest(`/images/proxy?url=${encodeURIComponent(url)}`);
+          if (proxied.ok) {
+            const blob = await proxied.blob();
+            const dataUrl = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+            imageData = { dataUrl, format: this.detectImageFormat(dataUrl) };
+          }
+        } catch (_) { /* ignore and fall back */ }
+        if (!imageData) {
+          imageData = await this.loadImageWithCORS(url);
+        }
         return {
           success: true,
           dataUrl: imageData.dataUrl,
@@ -3496,18 +3848,35 @@ class PDFReportService {
         };
       }
       
-      // Handle relative URLs or file paths
-      return {
-        success: true,
-        dataUrl: url,
-        format: this.detectImageFormat(url)
-      };
+      // Handle relative URLs or file paths (same-origin)
+      if (!url.startsWith('data:') && !url.startsWith('blob:')) {
+        const loaded = await this.loadImageWithCORS(url);
+        return { success: true, dataUrl: loaded.dataUrl, format: loaded.format };
+      }
       
     } catch (error) {
       return {
         success: false,
         error: error.message
       };
+    }
+  }
+
+  /**
+   * Try to extract a data URL from an existing <img> element using the provided src
+   */
+  tryGetDataUrlFromImgElement(src) {
+    try {
+      const img = Array.from(document.images).find(i => i.src === src);
+      if (!img) return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      return canvas.toDataURL('image/png');
+    } catch (_) {
+      return null;
     }
   }
 
