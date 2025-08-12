@@ -2020,7 +2020,7 @@ const Storage = () => {
               </div>
             )}
 
-            {/* Other devices - standard PDU connections (but NOT UPS) */}
+            {/* Other devices - standard PDU connections (but NOT UPS) - Updated to include Router and ISP Equipment */}
             {(['switch','top-level','sd-wan','camera-server','router','isp-equipment'].includes(editingDevice.type)) && (
               <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
                 <div className="flex items-center justify-between">
