@@ -115,10 +115,12 @@ const RackDiagram: React.FC<RackDiagramProps> = ({
     const startUnit = device.startUnit || 1;
     const unitSpan = device.unitSpan || device.rack_units || 1;
     
-    // Fill all units this device occupies
-    for (let u = startUnit; u < startUnit + unitSpan; u++) {
-      if (u <= rackHeight) {
-        devicesByUnit[u] = device;
+    // Fill all units this device occupies (spans DOWN from start unit)
+    // e.g., start=37, span=2 -> occupies units 37, 36
+    for (let i = 0; i < unitSpan; i++) {
+      const occupiedUnit = startUnit - i;
+      if (occupiedUnit >= 1 && occupiedUnit <= rackHeight) {
+        devicesByUnit[occupiedUnit] = device;
       }
     }
   });
@@ -179,7 +181,8 @@ const RackDiagram: React.FC<RackDiagramProps> = ({
             const unitSpan = device.unitSpan || device.rack_units || 1;
             
             // Calculate grid position: unit 45 = row 1, unit 44 = row 2, etc.
-            const gridRowStart = rackHeight - startUnit - unitSpan + 2;
+            // Device spans DOWN from start unit (e.g., start=37, span=2 -> units 37,36)
+            const gridRowStart = rackHeight - startUnit + 1;
             
             return (
               <div
