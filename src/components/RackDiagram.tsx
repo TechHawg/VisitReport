@@ -30,22 +30,61 @@ interface RackDiagramProps {
 }
 
 /**
- * Generate deterministic color for device based on its ID/name
- * Uses string hash to HSL conversion for consistent, unique colors
+ * Device type color mapping with WCAG-compliant contrast
  */
-function colorForDevice(k: string): { bg: string; fg: string } {
+const DEVICE_TYPE_COLORS: { [key: string]: { bg: string; fg: string } } = {
+  // Infrastructure & Power
+  'ups': { bg: '#dc2626', fg: '#ffffff' }, // Red - Critical power
+  'pdu': { bg: '#ea580c', fg: '#ffffff' }, // Orange - Power distribution
+  
+  // Network Equipment  
+  'switch': { bg: '#2563eb', fg: '#ffffff' }, // Blue - Network switching
+  'router': { bg: '#1d4ed8', fg: '#ffffff' }, // Dark Blue - Network routing
+  'isp-equipment': { bg: '#3730a3', fg: '#ffffff' }, // Indigo - ISP gear
+  
+  // Servers & Compute
+  'server': { bg: '#059669', fg: '#ffffff' }, // Green - Servers
+  'top-level': { bg: '#047857', fg: '#ffffff' }, // Dark Green - Top level servers
+  
+  // Network & WAN
+  'sd-wan': { bg: '#7c3aed', fg: '#ffffff' }, // Purple - SD-WAN
+  
+  // Monitoring & Security
+  'camera-server': { bg: '#be185d', fg: '#ffffff' }, // Pink - Security/cameras
+  'test-pc': { bg: '#0891b2', fg: '#ffffff' }, // Cyan - Test equipment
+  
+  // Connectivity
+  'patch-panel': { bg: '#65a30d', fg: '#ffffff' }, // Lime - Patch panels
+  
+  // Default fallback
+  'default': { bg: '#6b7280', fg: '#ffffff' }, // Gray - Unknown devices
+};
+
+/**
+ * Generate consistent color for device based on its type
+ * Falls back to device-specific color if type is not recognized
+ */
+function colorForDevice(device: Device): { bg: string; fg: string } {
+  const deviceType = device.type?.toLowerCase() || 'default';
+  
+  // Check if we have a predefined color for this device type
+  if (DEVICE_TYPE_COLORS[deviceType]) {
+    return DEVICE_TYPE_COLORS[deviceType];
+  }
+  
+  // Fallback to device-specific color generation for unknown types
+  const deviceKey = device.id || device.name || 'unknown';
   let h = 0;
-  for (let i = 0; i < k.length; i++) {
-    h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < deviceKey.length; i++) {
+    h = (h * 31 + deviceKey.charCodeAt(i)) >>> 0;
   }
   
   const hue = h % 360;
-  const sat = 62;
-  const light = 58;
+  const sat = 55;
+  const light = 45; // Darker for better contrast
   
   const bg = `hsl(${hue} ${sat}% ${light}%)`;
-  // Choose foreground color for contrast
-  const fg = light < 60 ? '#fff' : '#111';
+  const fg = '#ffffff'; // Always white text for better contrast
   
   return { bg, fg };
 }
@@ -60,7 +99,7 @@ interface DeviceBlockProps {
 
 const DeviceBlock: React.FC<DeviceBlockProps> = ({ device, onClick }) => {
   const unitSpan = device.unitSpan || device.rack_units || 1;
-  const colors = colorForDevice(device.id || device.name || '');
+  const colors = colorForDevice(device);
   
   return (
     <div
@@ -155,6 +194,29 @@ const RackDiagram: React.FC<RackDiagramProps> = ({
         <span className="legend-item front">FRONT</span>
         <span className="legend-item back">BACK</span>
       </div>
+      
+      {/* Device Type Color Legend */}
+      {devices.length > 0 && (
+        <div className="device-type-legend">
+          <div className="legend-title">Device Types:</div>
+          <div className="legend-colors">
+            {Array.from(new Set(devices.map(d => d.type?.toLowerCase()).filter(Boolean)))
+              .sort()
+              .map(deviceType => {
+                const colors = DEVICE_TYPE_COLORS[deviceType] || DEVICE_TYPE_COLORS['default'];
+                return (
+                  <div key={deviceType} className="legend-color-item">
+                    <div 
+                      className="color-swatch"
+                      style={{ backgroundColor: colors.bg, color: colors.fg }}
+                    />
+                    <span className="color-label">{deviceType.replace('-', ' ').toUpperCase()}</span>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
       
       {/* Rack Grid */}
       <div 
