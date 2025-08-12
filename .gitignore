@@ -68,12 +68,21 @@ __tests__/
 *.spec.js
 test-*.js
 test-*.html
+test-*.mjs
+test-*.ts
+test-*.tsx
 debug-*.js
 debug-*.html
+debug-*.txt
 debug-*.png
 debug-*.jpg
+*-validation.js
+*-demo-test.js
+verify-*.js
+prompt.txt
 
 # Screenshots and test images
+screenshots/
 *-test.png
 *-test.jpg
 app-screenshot.png
@@ -81,6 +90,12 @@ navigation-test.png
 all-pages-test.png
 screenshot*.png
 screenshot*.jpg
+*.png
+*.jpg
+!public/**/*.png
+!public/**/*.jpg
+!src/assets/**/*.png
+!src/assets/**/*.jpg
 
 # Development documentation
 *_SUMMARY.md
@@ -164,3 +179,9 @@ dev.log
 debug.log
 current
 cuurent
+dev-server.log
+dev-server.pid
+vite.log
+server.log
+*.pid
+*.log
