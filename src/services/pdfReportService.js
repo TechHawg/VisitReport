@@ -4043,12 +4043,15 @@ class PDFReportService {
   }
 
   /**
-   * Capture rack visualizer diagrams from the DOM
+   * Capture rack visualizer diagrams from the DOM using optimized export utilities
    */
   async captureRackVisualizers(reportData) {
     const rackDiagrams = [];
     
     try {
+      // Import export utilities
+      const { captureRackDiagram, calculateRackLayout } = await import('../utils/pdfExportUtils.js');
+      
       // Try to find rack visualizer elements in the DOM
       const rackElements = document.querySelectorAll('[data-rack-id]');
       
@@ -4057,32 +4060,30 @@ class PDFReportService {
         return rackDiagrams;
       }
 
-      // Import html2canvas dynamically
-      const html2canvas = (await import('html2canvas')).default;
+      console.log(`Found ${rackElements.length} rack elements to capture`);
       
+      // Calculate optimal layout
+      const layout = calculateRackLayout(Array.from(rackElements));
+      
+      // Capture each rack element with optimized settings
       for (const element of rackElements) {
         try {
           const rackId = element.getAttribute('data-rack-id');
-          const canvas = await html2canvas(element, {
-            backgroundColor: '#ffffff',
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            foreignObjectRendering: false,
-            height: element.scrollHeight,
-            width: element.scrollWidth
+          console.log(`Capturing rack diagram for: ${rackId}`);
+          
+          const capturedDiagram = await captureRackDiagram(element, rackId);
+          rackDiagrams.push({
+            ...capturedDiagram,
+            layout
           });
           
-          rackDiagrams.push({
-            dataUrl: canvas.toDataURL('image/png'),
-            title: `Rack Layout - ${rackId}`,
-            width: canvas.width,
-            height: canvas.height
-          });
         } catch (error) {
           console.warn(`Failed to capture rack diagram for element:`, error);
+          // Continue with other racks even if one fails
         }
       }
+      
+      console.log(`Successfully captured ${rackDiagrams.length} rack diagrams`);
     } catch (error) {
       console.warn('Failed to capture rack visualizers:', error);
     }

@@ -13,6 +13,8 @@ import { RACK_COLORS } from '../../constants/colors';
 import { useApp } from '../../context/AppContext';
 import { EMAIL_RECIPIENTS } from '../../constants/emailConfig';
 import RackVisualizer from '../../components/rack/RackVisualizer.jsx';
+import RackDiagram from '../../components/RackDiagram.tsx';
+import '../../styles/rack.css';
 
 const Storage = () => {
   const { reportData, updateReportData, addNotification } = useApp();
@@ -765,8 +767,22 @@ const Storage = () => {
     });
   };
 
-  // New rack visualization using RackVisualizer component
-  const renderRackVisualization = (rack, locationId, showControls = false) => {
+  // New CSS Grid-based rack visualization - optimized for PDF export
+  const renderRackVisualization = (rack, locationId, showControls = false, useGridLayout = true) => {
+    if (useGridLayout) {
+      // Use new CSS Grid-based RackDiagram component
+      return (
+        <RackDiagram
+          rack={rack}
+          locationName={dataClosetData.locations?.find(l => l.id === locationId)?.name}
+          showControls={showControls}
+          onDeviceClick={(device) => setSelectedDevice(device)}
+          viewMode="single"
+        />
+      );
+    }
+    
+    // Fallback to original RackVisualizer component
     return (
       <RackVisualizer
         rack={rack}
