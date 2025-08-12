@@ -13,7 +13,7 @@ import { RACK_COLORS } from '../../constants/colors';
 import { useApp } from '../../context/AppContext';
 import { EMAIL_RECIPIENTS } from '../../constants/emailConfig';
 import RackVisualizer from '../../components/rack/RackVisualizer.jsx';
-import RackDiagram from '../../components/RackDiagram.tsx';
+import RackDiagram from '../../components/RackDiagram.jsx';
 import '../../styles/rack.css';
 
 const Storage = () => {

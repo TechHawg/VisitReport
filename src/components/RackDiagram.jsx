@@ -1,34 +1,6 @@
 import React from 'react';
 import '../styles/rack.css';
 
-interface Device {
-  id: string;
-  name: string;
-  type: string;
-  startUnit: number;
-  unitSpan?: number;
-  rack_units?: number;
-  status?: string;
-  model?: string;
-  manufacturer?: string;
-  [key: string]: any;
-}
-
-interface Rack {
-  id: string;
-  name: string;
-  height: number;
-  devices?: Device[];
-}
-
-interface RackDiagramProps {
-  rack: Rack;
-  locationName?: string;
-  showControls?: boolean;
-  onDeviceClick?: (device: Device) => void;
-  viewMode?: 'single' | 'side-by-side';
-}
-
 /**
  * Device type color mapping with WCAG-compliant contrast
  */
@@ -64,7 +36,7 @@ const DEVICE_TYPE_COLORS: { [key: string]: { bg: string; fg: string } } = {
  * Generate consistent color for device based on its type
  * Falls back to device-specific color if type is not recognized
  */
-function colorForDevice(device: Device): { bg: string; fg: string } {
+function colorForDevice(device) {
   const deviceType = device.type?.toLowerCase() || 'default';
   
   // Check if we have a predefined color for this device type
@@ -92,12 +64,7 @@ function colorForDevice(device: Device): { bg: string; fg: string } {
 /**
  * DeviceBlock component - represents a single device in the rack
  */
-interface DeviceBlockProps {
-  device: Device;
-  onClick?: () => void;
-}
-
-const DeviceBlock: React.FC<DeviceBlockProps> = ({ device, onClick }) => {
+const DeviceBlock = ({ device, onClick }) => {
   const unitSpan = device.unitSpan || device.rack_units || 1;
   const colors = colorForDevice(device);
   
@@ -134,7 +101,7 @@ const DeviceBlock: React.FC<DeviceBlockProps> = ({ device, onClick }) => {
 /**
  * Main RackDiagram component using CSS Grid layout
  */
-const RackDiagram: React.FC<RackDiagramProps> = ({
+const RackDiagram = ({
   rack,
   locationName,
   showControls = false,
@@ -224,7 +191,7 @@ const RackDiagram: React.FC<RackDiagramProps> = ({
         style={{
           '--ruH': '24px',
           gridTemplateRows: `repeat(${rackHeight}, var(--ruH))`,
-        } as React.CSSProperties}
+        }}
       >
         {/* Unit Numbers */}
         <div className="unit-numbers">
