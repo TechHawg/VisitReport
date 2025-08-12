@@ -978,6 +978,8 @@ const Storage = () => {
     { value: 'ups', label: 'UPS', icon: <Zap size={16} /> },
     { value: 'pdu', label: 'PDU', icon: <Zap size={16} /> },
     { value: 'switch', label: 'Switch', icon: <Wifi size={16} /> },
+    { value: 'router', label: 'Router', icon: <Wifi size={16} /> },
+    { value: 'isp-equipment', label: 'ISP Equipment', icon: <Wifi size={16} /> },
     { value: 'top-level', label: 'Top Level', icon: <Server size={16} /> },
     { value: 'sd-wan', label: 'SD WAN', icon: <Wifi size={16} /> },
     { value: 'camera-server', label: 'Camera Server', icon: <Server size={16} /> },
@@ -2292,7 +2294,7 @@ Or JSON format:
               <ul className="list-disc list-inside mt-1 space-y-1">
                 <li>Empty lines are ignored</li>
                 <li>Missing locations/racks will be created automatically</li>
-                <li>Device types: server, switch, router, storage, ups, pdu, firewall, monitor, patch-panel, other</li>
+                <li>Device types: ups, pdu, switch, router, isp-equipment, top-level, sd-wan, camera-server, test-pc, patch-panel</li>
                 <li>Device status: active, inactive, maintenance, retired</li>
               </ul>
             </div>
