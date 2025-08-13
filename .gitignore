@@ -185,3 +185,8 @@ vite.log
 server.log
 *.pid
 *.log
+dist/
+node_modules/
+.env*
+*.log
+coverage/
