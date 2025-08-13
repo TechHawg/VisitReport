@@ -3,7 +3,7 @@ import {
   Monitor, HardDrive, Phone, Headphones, Package, 
   Building2, Plus, Download, Mail, Trash2
 } from 'lucide-react';
-import { calc, calcAll, getSummaryTotals } from './calc.js';
+import { computeTotals } from '../../utils/computeTotals';
 import '../../styles/inventory.css';
 
 // Default inventory items with icons
@@ -84,13 +84,42 @@ const InventoryTable = ({ data, onUpdate, onExportPDF }) => {
     officeHeadcount: data?.officeHeadcount || 0
   });
 
-  // Calculate items with formulas
-  const calculatedItems = useMemo(() => calcAll(items), [items]);
-  const summaryTotals = useMemo(() => getSummaryTotals(calculatedItems), [calculatedItems]);
+  // Calculate items with formulas using computeTotals
+  const calculatedItems = useMemo(() => {
+    return items.map(item => {
+      const inventoryData = {
+        inUseByEmployee: item.inUse,
+        trainingRoom: item.training,
+        other: [item.conference, item.gsm, item.prospect, item.applicant, item.visitor, item.other],
+        sparesFloor: item.floor,
+        sparesStorage: item.storage,
+        broken: item.broken
+      };
+      const totals = computeTotals(inventoryData);
+      return {
+        ...item,
+        totalOther: totals.totalOtherUse,
+        sparesAuto: totals.spares,
+        total: totals.total
+      };
+    });
+  }, [items]);
+
+  const summaryTotals = useMemo(() => {
+    return {
+      totalInUse: calculatedItems.reduce((sum, item) => sum + (Number(item.inUse) || 0), 0),
+      totalOther: calculatedItems.reduce((sum, item) => sum + (Number(item.totalOther) || 0), 0),
+      totalSpares: calculatedItems.reduce((sum, item) => sum + (Number(item.sparesAuto) || 0), 0),
+      totalBroken: calculatedItems.reduce((sum, item) => sum + (Number(item.broken) || 0), 0),
+      grandTotal: calculatedItems.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
+    };
+  }, [calculatedItems]);
 
   // Update handler with debouncing and negative clamping
   const handleItemChange = useCallback((index, field, value) => {
-    const numValue = Math.max(0, parseInt(value) || 0); // Clamp negatives to 0
+    // Parse numbers safely - remove commas, handle empty strings
+    const toNum = (s) => (s.trim() === '' ? 0 : Number(s.replaceAll(',', '')));
+    const numValue = field === 'name' ? value : Math.max(0, toNum(value) || 0); // Clamp negatives to 0
     
     setItems(prevItems => {
       const newItems = [...prevItems];
