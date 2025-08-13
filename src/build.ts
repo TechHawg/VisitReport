@@ -1,1 +1,2 @@
-export const BUILD_ID = new Date().toISOString();
+export const BUILD_ID =
+  (import.meta as any).env?.VITE_BUILD_ID ?? 'dev-' + new Date().toISOString();

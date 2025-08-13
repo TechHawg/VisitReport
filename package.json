@@ -10,7 +10,7 @@
     "dev:safe": "npm run dev:cleanup && sleep 1 && vite --host 0.0.0.0",
     "dev:server": "node server.js",
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev\"",
-    "build": "vite build",
+    "build": "VITE_BUILD_ID=$(date -u +%Y-%m-%dT%H:%M:%SZ) vite build",
     "build:github": "VITE_GITHUB_PAGES=true vite build",
     "preview": "vite preview",
     "preview:github": "VITE_GITHUB_PAGES=true vite preview",
