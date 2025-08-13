@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { 
   Package, Plus, Edit, Trash2, BarChart3, Download, Upload, 
   FileSpreadsheet, Mail, Calculator, Monitor, Phone, Users,
-  Headphones, HardDrive, Printer, Building2, UserCheck, Recycle
+  Headphones, HardDrive, Printer, Recycle
 } from 'lucide-react';
 import Section from '../../components/ui/Section';
 import Input from '../../components/ui/Input';
@@ -15,13 +15,12 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useApp } from '../../context/AppContext';
 import { EMAIL_RECIPIENTS } from '../../constants/emailConfig';
 import Recycling from '../Recycling/Recycling';
-import InventoryTable from '../../features/inventory/InventoryTable.jsx';
+import OfficeInventoryTable from '../../features/inventory/OfficeInventoryTable.tsx';
 
 const Inventory = () => {
   const { reportData, updateReportData, addNotification } = useApp();
   const [activeTab, setActiveTab] = useState('general');
   const [editingItem, setEditingItem] = useState(null);
-  const [editingStation, setEditingStation] = useState(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(null);
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -43,13 +42,6 @@ const Inventory = () => {
       { description: 'Wireless Headsets', inUse: 0, otherUse: { training: 0, conf: 0, gsm: 0, prospecting: 0, applicant: 0, visitor: 0, other: 0 }, spares: { onFloor: 0, inStorage: 0 }, broken: 0 },
       { description: 'VPN Phone', inUse: 0, otherUse: { training: 0, conf: 0, gsm: 0, prospecting: 0, applicant: 0, visitor: 0, other: 0 }, spares: { onFloor: 0, inStorage: 0 }, broken: 0 },
     ],
-    specialStations: {
-      threeMonitorSetups: 0,
-      prospectingStations: 0,
-      visitorStations: 0,
-      applicantStations: 0,
-      eolComputers: 0
-    },
     lastUpdated: new Date().toISOString().split('T')[0],
     notes: ''
   };
@@ -65,12 +57,6 @@ const Inventory = () => {
       label: 'General Inventory', 
       icon: <Package size={18} />,
       description: 'Track standard hardware items and equipment'
-    },
-    { 
-      id: 'stations', 
-      label: 'Special Stations', 
-      icon: <Building2 size={18} />,
-      description: 'Monitor specialized workstation setups'
     },
     { 
       id: 'recycling', 
@@ -105,10 +91,6 @@ const Inventory = () => {
     updateInventoryData('items', newItems);
   };
 
-  const handleStationChange = (field, value) => {
-    const newStations = { ...inventoryData.specialStations, [field]: parseInt(value) || 0 };
-    updateInventoryData('specialStations', newStations);
-  };
 
   const addCustomItem = () => {
     setEditingItem({
@@ -156,28 +138,80 @@ const Inventory = () => {
 
   // Calculate totals and progress
   const calculateTotals = () => {
+    if (!inventoryData?.items || !Array.isArray(inventoryData.items)) {
+      return { total: 0, inUse: 0, spare: 0, broken: 0 };
+    }
+    
     return inventoryData.items.reduce((totals, item) => {
-      const itemTotal = item.inUse + 
-        Object.values(item.otherUse).reduce((sum, val) => sum + val, 0) + 
-        Object.values(item.spares).reduce((sum, val) => sum + val, 0) + 
-        item.broken;
+      // Safely handle both old and new data formats
+      const inUse = item.inUse || item.inUseByEmployees || 0;
+      const broken = item.broken || 0;
+      
+      // Handle otherUse - could be an object or individual fields
+      let otherUseTotal = 0;
+      if (item.otherUse && typeof item.otherUse === 'object') {
+        otherUseTotal = Object.values(item.otherUse).reduce((sum, val) => sum + (val || 0), 0);
+      } else {
+        // New format with individual fields
+        otherUseTotal = (item.training || 0) + (item.conference || 0) + 
+                       (item.gsm || 0) + (item.prospecting || 0) + 
+                       (item.applicant || 0) + (item.visitor || 0) + 
+                       (item.otherUse || 0);
+      }
+      
+      // Handle spares - could be an object or individual fields
+      let sparesTotal = 0;
+      if (item.spares && typeof item.spares === 'object') {
+        sparesTotal = Object.values(item.spares).reduce((sum, val) => sum + (val || 0), 0);
+      } else {
+        // New format with individual fields
+        sparesTotal = (item.sparesOnFloor || 0) + (item.sparesInStorage || 0);
+      }
+      
+      const itemTotal = inUse + otherUseTotal + sparesTotal + broken;
       
       return {
         total: totals.total + itemTotal,
-        inUse: totals.inUse + item.inUse,
-        spare: totals.spare + Object.values(item.spares).reduce((sum, val) => sum + val, 0),
-        broken: totals.broken + item.broken
+        inUse: totals.inUse + inUse,
+        spare: totals.spare + sparesTotal,
+        broken: totals.broken + broken
       };
     }, { total: 0, inUse: 0, spare: 0, broken: 0 });
   };
 
   const calculateProgress = () => {
+    if (!inventoryData?.items || !Array.isArray(inventoryData.items)) {
+      return 0;
+    }
+    
     const totalItems = inventoryData.items.length;
     const completedItems = inventoryData.items.filter(item => {
-      const itemTotal = item.inUse + 
-        Object.values(item.otherUse).reduce((sum, val) => sum + val, 0) + 
-        Object.values(item.spares).reduce((sum, val) => sum + val, 0) + 
-        item.broken;
+      // Safely handle both old and new data formats
+      const inUse = item.inUse || item.inUseByEmployees || 0;
+      const broken = item.broken || 0;
+      
+      // Handle otherUse - could be an object or individual fields
+      let otherUseTotal = 0;
+      if (item.otherUse && typeof item.otherUse === 'object') {
+        otherUseTotal = Object.values(item.otherUse).reduce((sum, val) => sum + (val || 0), 0);
+      } else {
+        // New format with individual fields
+        otherUseTotal = (item.training || 0) + (item.conference || 0) + 
+                       (item.gsm || 0) + (item.prospecting || 0) + 
+                       (item.applicant || 0) + (item.visitor || 0) + 
+                       (item.otherUse || 0);
+      }
+      
+      // Handle spares - could be an object or individual fields
+      let sparesTotal = 0;
+      if (item.spares && typeof item.spares === 'object') {
+        sparesTotal = Object.values(item.spares).reduce((sum, val) => sum + (val || 0), 0);
+      } else {
+        // New format with individual fields
+        sparesTotal = (item.sparesOnFloor || 0) + (item.sparesInStorage || 0);
+      }
+      
+      const itemTotal = inUse + otherUseTotal + sparesTotal + broken;
       return itemTotal > 0;
     }).length;
     
@@ -186,30 +220,73 @@ const Inventory = () => {
 
   // CSV Export functionality
   const exportToCSV = () => {
+    if (!inventoryData?.items || !Array.isArray(inventoryData.items)) {
+      addNotification({
+        type: 'error',
+        message: 'No inventory data to export',
+        duration: 3000
+      });
+      return;
+    }
+    
     const headers = [
       'Description', 'In Use', 'Training', 'Conference', 'GSM', 'Prospecting', 
       'Applicant', 'Visitor', 'Other Use', 'Spares On Floor', 'Spares In Storage', 'Broken', 'Total'
     ];
     
     const rows = inventoryData.items.map(item => {
-      const total = item.inUse + 
-        Object.values(item.otherUse).reduce((sum, val) => sum + val, 0) + 
-        Object.values(item.spares).reduce((sum, val) => sum + val, 0) + 
-        item.broken;
+      // Safely handle both old and new data formats
+      const inUse = item.inUse || item.inUseByEmployees || 0;
+      const broken = item.broken || 0;
+      const description = item.description || item.name || '';
+      
+      // Handle otherUse - could be an object or individual fields
+      let training = 0, conf = 0, gsm = 0, prospecting = 0, applicant = 0, visitor = 0, other = 0;
+      if (item.otherUse && typeof item.otherUse === 'object') {
+        training = item.otherUse.training || 0;
+        conf = item.otherUse.conf || 0;
+        gsm = item.otherUse.gsm || 0;
+        prospecting = item.otherUse.prospecting || 0;
+        applicant = item.otherUse.applicant || 0;
+        visitor = item.otherUse.visitor || 0;
+        other = item.otherUse.other || 0;
+      } else {
+        // New format with individual fields
+        training = item.training || 0;
+        conf = item.conference || 0;
+        gsm = item.gsm || 0;
+        prospecting = item.prospecting || 0;
+        applicant = item.applicant || 0;
+        visitor = item.visitor || 0;
+        other = item.otherUse || 0;
+      }
+      
+      // Handle spares - could be an object or individual fields
+      let onFloor = 0, inStorage = 0;
+      if (item.spares && typeof item.spares === 'object') {
+        onFloor = item.spares.onFloor || 0;
+        inStorage = item.spares.inStorage || 0;
+      } else {
+        // New format with individual fields
+        onFloor = item.sparesOnFloor || 0;
+        inStorage = item.sparesInStorage || 0;
+      }
+      
+      const total = inUse + training + conf + gsm + prospecting + applicant + visitor + other + onFloor + inStorage + broken;
       
       return [
-        `"${item.description}"`,
-        item.inUse,
-        item.otherUse.training,
-        item.otherUse.conf,
-        item.otherUse.gsm,
-        item.otherUse.prospecting,
-        item.otherUse.applicant,
-        item.otherUse.visitor,
-        item.otherUse.other,
-        item.spares.onFloor,
-        item.spares.inStorage,
-        item.broken,
+        `"${description}"`,
+        inUse,
+        training,
+        conf,
+        gsm,
+        prospecting,
+        applicant,
+        visitor,
+        other,
+        onFloor,
+        inStorage,
+        broken,
         total
       ].join(',');
     });
@@ -256,34 +333,63 @@ const Inventory = () => {
     
     body += `DETAILED INVENTORY:\n`;
     inventoryData.items.forEach(item => {
-      const itemTotal = item.inUse + 
-        Object.values(item.otherUse).reduce((sum, val) => sum + val, 0) + 
-        Object.values(item.spares).reduce((sum, val) => sum + val, 0) + 
-        item.broken;
+      // Safely handle both old and new data formats
+      const inUse = item.inUse || item.inUseByEmployees || 0;
+      const broken = item.broken || 0;
+      const description = item.description || item.name || '';
+      
+      // Handle otherUse safely
+      let otherUseTotal = 0;
+      let training = 0, conf = 0, gsm = 0;
+      if (item.otherUse && typeof item.otherUse === 'object') {
+        otherUseTotal = Object.values(item.otherUse).reduce((sum, val) => sum + (val || 0), 0);
+        training = item.otherUse.training || 0;
+        conf = item.otherUse.conf || 0;
+        gsm = item.otherUse.gsm || 0;
+      } else {
+        // New format
+        training = item.training || 0;
+        conf = item.conference || 0;
+        gsm = item.gsm || 0;
+        otherUseTotal = training + conf + gsm + (item.prospecting || 0) + 
+                       (item.applicant || 0) + (item.visitor || 0) + (item.other || 0);
+      }
+      
+      // Handle spares safely
+      let sparesTotal = 0;
+      if (item.spares && typeof item.spares === 'object') {
+        sparesTotal = Object.values(item.spares).reduce((sum, val) => sum + (val || 0), 0);
+      } else {
+        sparesTotal = (item.sparesOnFloor || 0) + (item.sparesInStorage || 0);
+      }
+      
+      const itemTotal = inUse + otherUseTotal + sparesTotal + broken;
       
       if (itemTotal > 0) {
-        body += `\n${item.description}:\n`;
-        body += `  In Use: ${item.inUse}\n`;
-        body += `  Training: ${item.otherUse.training}\n`;
-        body += `  Conference: ${item.otherUse.conf}\n`;
-        body += `  GSM: ${item.otherUse.gsm}\n`;
-        body += `  Prospecting: ${item.otherUse.prospecting}\n`;
-        body += `  Applicant: ${item.otherUse.applicant}\n`;
-        body += `  Visitor: ${item.otherUse.visitor}\n`;
-        body += `  Other: ${item.otherUse.other}\n`;
-        body += `  Spares (Floor): ${item.spares.onFloor}\n`;
-        body += `  Spares (Storage): ${item.spares.inStorage}\n`;
-        body += `  Broken: ${item.broken}\n`;
+        body += `\n${description}:\n`;
+        body += `  In Use: ${inUse}\n`;
+        body += `  Training: ${training}\n`;
+        body += `  Conference: ${conf}\n`;
+        body += `  GSM: ${gsm}\n`;
+        // Handle remaining fields safely
+        const prospecting = item.otherUse?.prospecting || item.prospecting || 0;
+        const applicant = item.otherUse?.applicant || item.applicant || 0;
+        const visitor = item.otherUse?.visitor || item.visitor || 0;
+        const other = item.otherUse?.other || item.other || 0;
+        const onFloor = item.spares?.onFloor || item.sparesOnFloor || 0;
+        const inStorage = item.spares?.inStorage || item.sparesInStorage || 0;
+        
+        body += `  Prospecting: ${prospecting}\n`;
+        body += `  Applicant: ${applicant}\n`;
+        body += `  Visitor: ${visitor}\n`;
+        body += `  Other: ${other}\n`;
+        body += `  Spares (Floor): ${onFloor}\n`;
+        body += `  Spares (Storage): ${inStorage}\n`;
+        body += `  Broken: ${broken}\n`;
         body += `  Total: ${itemTotal}\n`;
       }
     });
     
-    body += `\nSPECIAL STATIONS:\n`;
-    body += `3-Monitor Setups: ${inventoryData.specialStations.threeMonitorSetups}\n`;
-    body += `Prospecting Stations: ${inventoryData.specialStations.prospectingStations}\n`;
-    body += `Visitor Stations: ${inventoryData.specialStations.visitorStations}\n`;
-    body += `Applicant Stations: ${inventoryData.specialStations.applicantStations}\n`;
-    body += `EOL Computers: ${inventoryData.specialStations.eolComputers}\n`;
     
     if (inventoryData.notes) {
       body += `\nNOTES:\n${inventoryData.notes}\n`;
@@ -312,8 +418,8 @@ const Inventory = () => {
 
   const renderGeneralInventory = () => (
     <div className="space-y-6">
-      {/* Use the new InventoryTable component */}
-      <InventoryTable 
+      {/* Use the new OfficeInventoryTable component */}
+      <OfficeInventoryTable 
         data={inventoryData}
         onUpdate={(updatedData) => {
           updateReportData('inventory', updatedData);
@@ -336,106 +442,6 @@ const Inventory = () => {
     </div>
   );
 
-  const renderSpecialStations = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Monitor className="text-blue-600 dark:text-blue-400" size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">3-Monitor Setups</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Multi-display workstations</p>
-            </div>
-          </div>
-          <input
-            type="number"
-            min="0"
-            value={inventoryData.specialStations.threeMonitorSetups}
-            onChange={(e) => handleStationChange('threeMonitorSetups', e.target.value)}
-            className="w-full text-center text-2xl font-bold border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          />
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <Phone className="text-green-600 dark:text-green-400" size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Prospecting Stations</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Dedicated prospecting setups</p>
-            </div>
-          </div>
-          <input
-            type="number"
-            min="0"
-            value={inventoryData.specialStations.prospectingStations}
-            onChange={(e) => handleStationChange('prospectingStations', e.target.value)}
-            className="w-full text-center text-2xl font-bold border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          />
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-              <Users className="text-purple-600 dark:text-purple-400" size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Visitor Stations</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Guest workstations</p>
-            </div>
-          </div>
-          <input
-            type="number"
-            min="0"
-            value={inventoryData.specialStations.visitorStations}
-            onChange={(e) => handleStationChange('visitorStations', e.target.value)}
-            className="w-full text-center text-2xl font-bold border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          />
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-              <UserCheck className="text-yellow-600 dark:text-yellow-400" size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Applicant Stations</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Job applicant workstations</p>
-            </div>
-          </div>
-          <input
-            type="number"
-            min="0"
-            value={inventoryData.specialStations.applicantStations}
-            onChange={(e) => handleStationChange('applicantStations', e.target.value)}
-            className="w-full text-center text-2xl font-bold border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          />
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-              <HardDrive className="text-red-600 dark:text-red-400" size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">EOL Computers</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">End-of-life systems</p>
-            </div>
-          </div>
-          <input
-            type="number"
-            min="0"
-            value={inventoryData.specialStations.eolComputers}
-            onChange={(e) => handleStationChange('eolComputers', e.target.value)}
-            className="w-full text-center text-2xl font-bold border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          />
-        </div>
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -482,7 +488,6 @@ const Inventory = () => {
 
           {/* Tab Content */}
           {activeTab === 'general' && renderGeneralInventory()}
-          {activeTab === 'stations' && renderSpecialStations()}
           {activeTab === 'recycling' && <Recycling />}
         </div>
       </Section>

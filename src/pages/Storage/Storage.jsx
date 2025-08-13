@@ -13,7 +13,8 @@ import { RACK_COLORS } from '../../constants/colors';
 import { useApp } from '../../context/AppContext';
 import { EMAIL_RECIPIENTS } from '../../constants/emailConfig';
 import RackVisualizer from '../../components/rack/RackVisualizer.jsx';
-import RackDiagram from '../../components/RackDiagram.jsx';
+import RackDiagram from '../../components/rack/RackDiagram.jsx';
+import RackPage from '../../components/rack/RackPage.tsx';
 import '../../styles/rack.css';
 
 const Storage = () => {
@@ -28,6 +29,7 @@ const Storage = () => {
   const [viewingPhotos, setViewingPhotos] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showTwoRackDemo, setShowTwoRackDemo] = useState(false);
   const [importData, setImportData] = useState('');
   const [importType, setImportType] = useState('devices');
   const fileInputRef = useRef(null);
@@ -776,14 +778,30 @@ const Storage = () => {
     }
     
     if (useGridLayout) {
-      // Use new CSS Grid-based RackDiagram component
+      // Use new CSS Grid-based RackDiagram component with fixed layout
+      const transformedDevices = (rack.devices || []).map(device => ({
+        id: device.id || `${device.name}-${Date.now()}`,
+        name: device.name || 'Unknown Device',
+        startRU: device.startUnit || 1,
+        heightRU: device.unitSpan || device.rack_units || 1,
+        type: (device.type || 'other').toLowerCase(),
+        model: device.model,
+        manufacturer: device.manufacturer,
+        serialNumber: device.serialNumber
+      }));
+
       return (
         <RackDiagram
-          rack={rack}
-          locationName={dataClosetData.locations?.find(l => l.id === locationId)?.name}
-          showControls={showControls}
+          rackId={rack.id || `rack-${locationId}`}
+          rackName={rack.name || 'Unnamed Rack'}
+          totalU={rack.height || 45}
+          devices={transformedDevices}
+          location={dataClosetData.locations?.find(l => l.id === locationId)?.name || ''}
           onDeviceClick={(device) => setSelectedDevice(device)}
-          viewMode="single"
+          onEmptyClick={(startRU) => {
+            // Handle empty slot click for adding devices
+            console.log(`Clicked empty RU ${startRU} in rack ${rack.id}`);
+          }}
         />
       );
     }
@@ -1232,6 +1250,14 @@ const Storage = () => {
                   >
                     <Upload size={14} />
                     Bulk Import
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setShowTwoRackDemo(true)}
+                  >
+                    <Monitor size={14} />
+                    Two-Rack Demo
                   </Button>
                   <Button onClick={createLocation}>
                     <Plus size={16} />
@@ -2803,6 +2829,48 @@ Rack-003,Storage Room,18,2kW,Storage array rack`);
         cancelText="Cancel"
         variant="danger"
       />
+
+      {/* Two-Rack Demo Modal */}
+      <Modal
+        isOpen={showTwoRackDemo}
+        onClose={() => setShowTwoRackDemo(false)}
+        title="Two-Rack Layout Demo"
+        size="xl"
+      >
+        {dataClosetData.locations && dataClosetData.locations.length > 0 && dataClosetData.locations[0].racks && dataClosetData.locations[0].racks.length >= 2 && (
+          <RackPage
+            leftRack={transformRackData(dataClosetData.locations[0].racks[0])}
+            rightRack={transformRackData(dataClosetData.locations[0].racks[1])}
+            pageTitle="Two-Rack Layout Demo"
+            location={dataClosetData.locations[0].name}
+            onDeviceClick={(device, rackId) => {
+              console.log('Device clicked:', device, 'in rack:', rackId);
+            }}
+            onEmptyClick={(startRU, rackId) => {
+              console.log('Empty unit clicked:', startRU, 'in rack:', rackId);
+            }}
+            onExportPDF={() => {
+              console.log('Export PDF requested');
+            }}
+            showControls={true}
+          />
+        )}
+        {(!dataClosetData.locations || dataClosetData.locations.length === 0 || !dataClosetData.locations[0].racks || dataClosetData.locations[0].racks.length < 2) && (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <Package size={48} className="mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium mb-2">Need at least 2 racks to demo</p>
+            <p className="text-sm">Add a location with at least 2 racks to see the two-rack layout.</p>
+          </div>
+        )}
+        <div className="flex justify-end mt-6">
+          <Button
+            onClick={() => setShowTwoRackDemo(false)}
+            variant="outline"
+          >
+            Close Demo
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };
