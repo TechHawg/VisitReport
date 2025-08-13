@@ -1,9 +1,19 @@
 /* Rack Diagram Styles - CSS Grid Based Layout */
 
-/* Root variables */
+/* Fixed Layout Tokens - Deterministic Grid */
 :root {
-  --rack-width: 400px;
-  --rack-unit-height: 24px;
+  /* Two racks side-by-side with zero overlap */
+  --rack-page-w: 1020px;    /* Total page width for two racks */
+  --rack-w: 492px;          /* Each rack column width */
+  --ruH: 18px;              /* RU height on screen */
+  --ruH-print: 14px;        /* RU height for print */
+  --ru-gutter: 32px;        /* Space for RU numbers */
+  
+  /* Grid contract - deterministic positioning */
+  --grid-rows: 45;          /* Exactly 45U per rack */
+  --grid-cols: 1fr;         /* Single column for devices */
+  
+  /* Color scheme */
   --rack-border: #cbd5e0;
   --rack-bg: #ffffff;
   --rack-text: #374151;
@@ -26,12 +36,76 @@
   }
 }
 
-/* Container Styles */
-.rack-container {
-  max-width: var(--rack-width);
+/* Page Container for Print/Display */
+.rack-page-container {
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
   font-family: system-ui, -apple-system, sans-serif;
   color: var(--rack-text);
+}
+
+/* Page Header */
+.rack-page-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-bottom: 2px solid var(--rack-border);
+}
+
+.rack-page-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--rack-text);
+}
+
+.rack-page-location {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.rack-page-date {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+/* Two-Rack Page Layout - Fixed Width Contract */
+.rack-page {
+  width: var(--rack-page-w);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: var(--rack-w) var(--rack-w);
+  gap: 36px;
+}
+
+/* Page Controls */
+.rack-page-controls {
+  margin-top: 2rem;
+  padding: 1rem;
+  border-top: 1px solid var(--rack-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.rack-page-summary {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.summary-item {
+  font-size: 0.875rem;
+  color: var(--rack-text);
+}
+
+/* Single Rack Container */
+.rack-container {
+  width: var(--rack-w);
   background: var(--rack-bg);
   border: 1px solid var(--rack-border);
   border-radius: 8px;
@@ -39,14 +113,12 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.rack-container.side-by-side {
-  max-width: calc(var(--rack-width) * 2 + 2rem);
-  display: flex;
-  gap: 1rem;
-}
-
-.rack-container.side-by-side > .rack {
-  flex: 1;
+/* Grid-based rack layout with fixed positioning */
+.rack-wrapper {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ru-gutter) 1fr var(--ru-gutter);
+  width: 100%;
 }
 
 /* Header Styles */
@@ -146,70 +218,84 @@
   white-space: nowrap;
 }
 
-/* Main Rack Grid */
+/* Main Rack Grid - Fixed 45U Layout */
 .rack {
-  position: relative;
+  grid-column: 2;
   display: grid;
-  grid-template-rows: repeat(45, var(--ruH, 18px));
-  grid-auto-flow: row;
+  grid-template-columns: 32px 1fr; /* unit numbers + rack content */
+  width: 100%;
   background: repeating-linear-gradient(
     to bottom,
     #f5f7fb 0,
-    #f5f7fb var(--ruH, 18px),
-    #eef2f7 var(--ruH, 18px),
-    #eef2f7 calc(var(--ruH, 18px) + 1px)
+    #f5f7fb var(--ruH),
+    #eef2f7 var(--ruH),
+    #eef2f7 calc(var(--ruH) + 1px)
   );
 }
 
-/* RU Number Bars */
-.ru-bar {
-  position: absolute;
-  left: -28px;
-  top: 0;
-  width: 26px;
+/* Unit Numbers Column */
+.unit-numbers {
+  display: grid;
+  align-items: center;
+  justify-items: end;
+  padding-right: 4px;
 }
 
-.ru-bar span {
-  display: block;
-  height: var(--ruH, 18px);
-  line-height: 18px;
+.unit-number {
   font-size: 10px;
-  text-align: right;
-  opacity: 0.7;
+  color: var(--unit-number-text);
+  line-height: 1;
+  font-weight: 500;
+}
+
+/* Rack Content Column */
+.rack-content {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+/* RU Number Bars - Grid Positioned */
+.ru-bar-left {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  display: grid;
+  grid-template-rows: repeat(var(--grid-rows), var(--ruH));
+  align-items: center;
+  justify-items: end;
+  padding-right: 4px;
+}
+
+.ru-bar-left .ru-number {
+  font-size: 10px;
+  color: var(--unit-number-text);
+  line-height: 1;
+  font-weight: 500;
 }
 
 .ru-bar-right {
-  position: absolute;
-  right: -8px;
-  top: 0;
-  width: 6px;
-}
-
-.ru-bar-right span {
-  display: block;
-  height: var(--ruH, 18px);
-  border-right: 1px solid rgba(0, 0, 0, 0.25);
-}
-
-.ru-bar-right span:nth-child(5n) {
-  border-right-width: 2px;
-}
-
-/* Rack Content Grid */
-.rack-content {
+  grid-column: 3;
+  grid-row: 1 / -1;
   display: grid;
-  grid-template-rows: inherit;
-  position: relative;
+  grid-template-rows: repeat(var(--grid-rows), var(--ruH));
 }
 
-/* Empty Units */
+.ru-bar-right .ru-tick {
+  border-left: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+.ru-bar-right .ru-tick:nth-child(5n) {
+  border-left-width: 2px;
+}
+
+/* Device positioning using CSS Grid */
+
+/* Empty Units - Grid Positioned */
 .empty-unit {
-  min-height: var(--ruH, 24px);
   background: var(--empty-unit-bg);
   border: 1px dashed var(--empty-unit-border);
-  margin: 1px;
   border-radius: 2px;
   transition: all 0.2s ease;
+  margin: 1px;
 }
 
 .empty-unit:hover {
@@ -218,21 +304,23 @@
   cursor: pointer;
 }
 
-/* Device Blocks */
+/* Device Blocks - Grid Positioned with Deterministic Layout */
 .device {
-  grid-row: var(--start) / span var(--u);
+  grid-row: var(--ru-start) / span var(--ru-height);
   display: flex;
   align-items: center;
   border: 1px solid #6b7280;
   border-radius: 2px;
-  padding: 1px 0.5px;
-  font-size: 12px;
+  padding: 2px 6px;
+  font-size: 11px;
   line-height: 1.2;
   word-break: break-words;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   transition: all 0.2s ease;
+  margin: 1px;
+  min-height: calc(var(--ru-height) * var(--ruH) - 2px);
 }
 
 .device:hover {
@@ -318,55 +406,79 @@
   overflow: visible;
 }
 
-/* Print and PDF Export Styles */
+/* Print/PDF Export - Stable Layout with Fixed Tokens */
 @media print {
-  .rack-container {
-    break-inside: avoid;
-    page-break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid #000;
+  :root {
+    --ruH: var(--ruH-print);  /* Use smaller RU height for print */
   }
   
-  .rack, .device, .unit-number, .empty-unit {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  .rack-page-container {
+    max-width: none;
+    width: 100%;
+  }
+  
+  .rack-page-header {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    break-after: avoid;
+  }
+  
+  .rack-page {
+    width: var(--rack-page-w);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: var(--rack-w) var(--rack-w);
+    gap: 36px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  .rack-page-controls {
+    display: none !important;  /* Hide controls in print */
+  }
+  
+  .rack-container {
+    width: var(--rack-w);
+    box-shadow: none;
+    border: 1px solid #000;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  
+  .rack-wrapper {
+    display: grid;
+    grid-template-columns: var(--ru-gutter) 1fr var(--ru-gutter);
+  }
+  
+  .rack {
+    grid-column: 2;
+    display: grid;
+    grid-template-rows: repeat(var(--grid-rows), var(--ruH));
+    grid-template-columns: var(--grid-cols);
   }
   
   .device {
+    grid-row: var(--ru-start) / span var(--ru-height);
+    min-height: calc(var(--ru-height) * var(--ruH) - 2px);
     break-inside: avoid;
     page-break-inside: avoid;
-  }
-  
-  /* Ensure text remains readable in print */
-  .device-name {
-    font-weight: 700;
-  }
-  
-  .device-type, .device-units, .device-model {
-    font-weight: 600;
-  }
-  
-  /* Side-by-side layout for print */
-  .rack-container.side-by-side {
-    max-width: 100%;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-  }
-  
-  .rack-container.side-by-side > * {
-    flex: 0 0 48%;
-  }
-  
-  /* Print styles for legend */
-  .device-type-legend,
-  .legend-colors,
-  .color-swatch {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   
-  .device-type-legend {
+  .ru-bar-left, .ru-bar-right {
+    display: grid;
+    grid-template-rows: repeat(var(--grid-rows), var(--ruH));
+  }
+  
+  /* Ensure readable text weights */
+  .device-name { font-weight: 700; }
+  .device-type, .device-units, .device-model { font-weight: 600; }
+  
+  /* Legend print styles */
+  .device-type-legend, .legend-colors, .color-swatch {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     break-inside: avoid;
     page-break-inside: avoid;
   }
