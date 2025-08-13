@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
+import './styles/print.css';
 
 // Security headers should be set by the server/build process
 // See vite.config.js for security header configuration

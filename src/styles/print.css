@@ -1,0 +1,21 @@
+@page { 
+  size: A4; 
+  margin: 12mm; 
+}
+
+.pdf-page { 
+  width: 794px; /* A4 at ~96dpi; use one fixed width to avoid scaling */
+}
+
+* { 
+  -webkit-print-color-adjust: exact; 
+  print-color-adjust: exact; 
+}
+
+.section { 
+  break-inside: avoid; 
+}
+
+.page-break { 
+  break-after: page; 
+}
