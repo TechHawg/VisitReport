@@ -5,6 +5,7 @@ import Navigation from './components/layout/Navigation';
 import NotificationContainer from './components/ui/Notification';
 import PageRouter from './components/PageRouter';
 import AuthGuard from './components/auth/AuthGuard';
+import { BUILD_ID } from './build';
 
 // Error Boundary for debugging
 class AppErrorBoundary extends React.Component {
@@ -62,6 +63,10 @@ const AppContent = () => {
         <main className="container mx-auto p-4 sm:p-6 lg:p-8">
           <PageRouter />
         </main>
+        
+        <footer className="text-xs opacity-60 text-center py-2">
+          Build: {BUILD_ID}
+        </footer>
         
         <NotificationContainer />
       </div>
