@@ -56,15 +56,15 @@ const App = () => {
 const AppContent = () => {
   return (
     <AuthGuard requireAuth={true}>
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen font-sans">
+      <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 font-sans">
         <Header />
         <Navigation />
         
-        <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <main className="container mx-auto p-4 sm:p-6 lg:p-8 flex-1">
           <PageRouter />
         </main>
         
-        <footer className="text-xs opacity-60 text-center py-2">
+        <footer className="mt-auto p-2 text-xs opacity-60 text-center">
           Build: {BUILD_ID}
         </footer>
         
