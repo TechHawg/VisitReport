@@ -778,30 +778,33 @@ const Storage = () => {
     }
     
     if (useGridLayout) {
-      // Use new CSS Grid-based RackDiagram component with fixed layout
+      // Use new CSS Grid-based RackDiagram component with updated interface
       const transformedDevices = (rack.devices || []).map(device => ({
         id: device.id || `${device.name}-${Date.now()}`,
         name: device.name || 'Unknown Device',
-        startRU: device.startUnit || 1,
-        heightRU: device.unitSpan || device.rack_units || 1,
+        startUnit: device.startUnit || 1,
+        unitSpan: device.unitSpan || device.rack_units || 1,
         type: (device.type || 'other').toLowerCase(),
         model: device.model,
         manufacturer: device.manufacturer,
-        serialNumber: device.serialNumber
+        status: device.status,
+        rack_units: device.rack_units
       }));
+
+      const rackData = {
+        id: rack.id || `rack-${locationId}`,
+        name: rack.name || 'Unnamed Rack',
+        height: rack.height || 45,
+        devices: transformedDevices
+      };
 
       return (
         <RackDiagram
-          rackId={rack.id || `rack-${locationId}`}
-          rackName={rack.name || 'Unnamed Rack'}
-          totalU={rack.height || 45}
-          devices={transformedDevices}
-          location={dataClosetData.locations?.find(l => l.id === locationId)?.name || ''}
+          rack={rackData}
+          locationName={dataClosetData.locations?.find(l => l.id === locationId)?.name || ''}
+          showControls={showControls}
           onDeviceClick={(device) => setSelectedDevice(device)}
-          onEmptyClick={(startRU) => {
-            // Handle empty slot click for adding devices
-            console.log(`Clicked empty RU ${startRU} in rack ${rack.id}`);
-          }}
+          viewMode="single"
         />
       );
     }
