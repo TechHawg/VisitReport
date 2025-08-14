@@ -4,164 +4,219 @@ import '../../styles/rack.css';
 interface Device {
   id: string;
   name: string;
-  startRU: number;
-  heightRU: number;
-  type: 'server' | 'switch' | 'pdu' | 'ups' | 'network' | 'storage' | 'other';
+  type: string;
+  startUnit: number;
+  unitSpan?: number;
+  rack_units?: number;
+  status?: string;
   model?: string;
   manufacturer?: string;
-  serialNumber?: string;
+  [key: string]: any;
+}
+
+interface Rack {
+  id: string;
+  name: string;
+  height: number;
+  devices?: Device[];
 }
 
 interface RackDiagramProps {
-  rackId: string;
-  rackName: string;
-  totalU?: number;
-  devices: Device[];
-  location?: string;
+  rack: Rack;
+  locationName?: string;
+  showControls?: boolean;
   onDeviceClick?: (device: Device) => void;
-  onEmptyClick?: (startRU: number) => void;
+  viewMode?: 'single' | 'side-by-side';
 }
 
-// Device type colors with high contrast for print
-const deviceColors: Record<string, { bg: string; text: string }> = {
-  server: { bg: '#dcfce7', text: '#166534' },      // Green
-  switch: { bg: '#dbeafe', text: '#1e40af' },      // Blue
-  pdu: { bg: '#fed7aa', text: '#ea580c' },         // Orange
-  ups: { bg: '#f3e8ff', text: '#7c3aed' },         // Purple
-  network: { bg: '#cffafe', text: '#0e7490' },     // Cyan
-  storage: { bg: '#fef3c7', text: '#d97706' },     // Amber
-  other: { bg: '#f1f5f9', text: '#475569' }        // Gray
+/**
+ * Generate deterministic color for device based on its ID/name
+ * Uses string hash to HSL conversion for consistent, unique colors
+ */
+function colorForDevice(k: string): { bg: string; fg: string } {
+  let h = 0;
+  for (let i = 0; i < k.length; i++) {
+    h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  }
+  
+  const hue = h % 360;
+  const sat = 62;
+  const light = 58;
+  
+  const bg = `hsl(${hue} ${sat}% ${light}%)`;
+  // Choose foreground color for contrast
+  const fg = light < 60 ? '#fff' : '#111';
+  
+  return { bg, fg };
+}
+
+/**
+ * DeviceBlock component - represents a single device in the rack
+ */
+interface DeviceBlockProps {
+  device: Device;
+  onClick?: () => void;
+}
+
+const DeviceBlock: React.FC<DeviceBlockProps> = ({ device, onClick }) => {
+  const unitSpan = device.unitSpan || device.rack_units || 1;
+  const colors = colorForDevice(device.id || device.name || '');
+  
+  return (
+    <div
+      className="device"
+      style={{
+        '--u': unitSpan,
+        '--bg': colors.bg,
+        '--fg': colors.fg,
+        gridRow: `span ${unitSpan}`,
+        backgroundColor: colors.bg,
+        color: colors.fg,
+      } as React.CSSProperties}
+      onClick={onClick}
+      title={`${device.name} (${device.type}) - ${unitSpan}U`}
+    >
+      <div className="device-content">
+        <div className="device-name">{device.name}</div>
+        <div className="device-details">
+          <span className="device-type">{device.type}</span>
+          {unitSpan > 1 && <span className="device-units">{unitSpan}U</span>}
+        </div>
+        {device.model && (
+          <div className="device-model">
+            {device.manufacturer && `${device.manufacturer} `}{device.model}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
-export default function RackDiagram({ 
-  rackId, 
-  rackName, 
-  totalU = 45, 
-  devices, 
-  location = '',
+/**
+ * Main RackDiagram component using CSS Grid layout
+ */
+const RackDiagram: React.FC<RackDiagramProps> = ({
+  rack,
+  locationName,
+  showControls = false,
   onDeviceClick,
-  onEmptyClick 
-}: RackDiagramProps) {
-  // Calculate occupancy for statistics
-  const occupiedUs = devices.reduce((sum, device) => sum + device.heightRU, 0);
-  const utilization = Math.round((occupiedUs / totalU) * 100);
-
-  // Create array of all RU positions for tracking occupancy
-  const occupiedRUs = new Set<number>();
+  viewMode = 'single'
+}) => {
+  const rackHeight = rack.height || 45;
+  const devices = rack.devices || [];
+  
+  // Create array of units from top (45) to bottom (1) for display
+  const units = Array.from({ length: rackHeight }, (_, i) => rackHeight - i);
+  
+  // Create a map of which units are occupied by devices
+  const devicesByUnit: { [unit: number]: Device } = {};
+  
   devices.forEach(device => {
-    for (let i = device.startRU; i < device.startRU + device.heightRU; i++) {
-      occupiedRUs.add(i);
+    const startUnit = device.startUnit || 1;
+    const unitSpan = device.unitSpan || device.rack_units || 1;
+    
+    // Fill all units this device occupies
+    for (let u = startUnit; u < startUnit + unitSpan; u++) {
+      if (u <= rackHeight) {
+        devicesByUnit[u] = device;
+      }
     }
   });
+  
+  // Calculate utilization
+  const occupiedUnits = Object.keys(devicesByUnit).length;
+  const utilization = Math.round((occupiedUnits / rackHeight) * 100);
+  
+  const handleDeviceClick = (device: Device) => {
+    if (onDeviceClick) {
+      onDeviceClick(device);
+    }
+  };
 
   return (
-    <div className="rack-container">
-      {/* Header with rack info */}
+    <div className={`rack-container ${viewMode}`} data-rack-id={rack.id}>
+      {/* Rack Header */}
       <div className="rack-header">
         <div className="rack-title">
-          <h3>{rackName}</h3>
-          {location && <div className="location-name">{location}</div>}
+          <h3>{rack.name}</h3>
+          {locationName && <span className="location-name">{locationName}</span>}
         </div>
         <div className="rack-stats">
-          <div>Total: {totalU}U</div>
-          <div>Used: {occupiedUs}U</div>
-          <div className="utilization">{utilization}%</div>
+          <span className="utilization">Utilization: {utilization}%</span>
+          <span className="height">{rackHeight}U</span>
+          <span className="device-count">{devices.length} devices</span>
         </div>
       </div>
-
-      {/* Device Type Legend */}
-      <div className="device-type-legend">
-        <div className="legend-title">Device Types</div>
-        <div className="legend-colors">
-          {Object.entries(deviceColors).map(([type, colors]) => (
-            <div key={type} className="legend-color-item">
-              <div 
-                className="color-swatch" 
-                style={{ 
-                  backgroundColor: colors.bg, 
-                  color: colors.text 
+      
+      {/* Rack Legend */}
+      <div className="rack-legend">
+        <span className="legend-item front">FRONT</span>
+        <span className="legend-item back">BACK</span>
+      </div>
+      
+      {/* Rack Grid */}
+      <div 
+        className="rack"
+        style={{
+          '--ruH': '24px',
+          gridTemplateRows: `repeat(${rackHeight}, var(--ruH))`,
+        } as React.CSSProperties}
+      >
+        {/* Unit Numbers */}
+        <div className="unit-numbers">
+          {units.map(unitNum => (
+            <div key={unitNum} className="unit-number">
+              {unitNum}
+            </div>
+          ))}
+        </div>
+        
+        {/* Rack Content */}
+        <div className="rack-content">
+          {/* Render devices positioned at their start units */}
+          {devices.map((device, index) => {
+            const startUnit = device.startUnit || 1;
+            const unitSpan = device.unitSpan || device.rack_units || 1;
+            
+            // Calculate grid position: unit 45 = row 1, unit 44 = row 2, etc.
+            const gridRowStart = rackHeight - startUnit - unitSpan + 2;
+            
+            return (
+              <div
+                key={`${device.id}-${index}`}
+                style={{
+                  gridRowStart,
+                  gridRowEnd: `span ${unitSpan}`,
                 }}
               >
-                {type.charAt(0).toUpperCase()}
-              </div>
-              <span className="color-label">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Rack Grid Layout */}
-      <div className="rack-wrapper">
-        {/* Left RU Numbers */}
-        <div className="ru-bar-left">
-          {Array.from({ length: totalU }, (_, i) => (
-            <div key={i} className="ru-number">
-              {totalU - i}
-            </div>
-          ))}
-        </div>
-
-        {/* Rack with Grid Positioning */}
-        <div className="rack">
-          {/* Devices positioned using CSS Grid */}
-          {devices.map(device => {
-            const colors = deviceColors[device.type] || deviceColors.other;
-            const ruStart = totalU - device.startRU - device.heightRU + 1;
-            
-            return (
-              <div
-                key={device.id}
-                className="device"
-                style={{
-                  '--ru-start': ruStart,
-                  '--ru-height': device.heightRU,
-                  backgroundColor: colors.bg,
-                  color: colors.text
-                } as React.CSSProperties}
-                onClick={() => onDeviceClick?.(device)}
-              >
-                <div className="device-content">
-                  <div className="device-name">{device.name}</div>
-                  <div className="device-details">
-                    <span className="device-type">{device.type}</span>
-                    <span className="device-units">{device.heightRU}U</span>
-                  </div>
-                  {device.model && (
-                    <div className="device-model">{device.model}</div>
-                  )}
-                </div>
+                <DeviceBlock
+                  device={device}
+                  onClick={() => handleDeviceClick(device)}
+                />
               </div>
             );
           })}
-
-          {/* Empty slots for interaction */}
-          {Array.from({ length: totalU }, (_, i) => {
-            const ruNumber = i + 1;
-            if (occupiedRUs.has(ruNumber)) return null;
+          
+          {/* Render empty units for remaining space */}
+          {units.map(unitNum => {
+            const device = devicesByUnit[unitNum];
             
-            const ruStart = totalU - ruNumber;
+            if (!device) {
+              return (
+                <div
+                  key={`empty-${unitNum}`}
+                  className="empty-unit"
+                  title={`Unit ${unitNum} - Available`}
+                />
+              );
+            }
             
-            return (
-              <div
-                key={`empty-${ruNumber}`}
-                className="empty-unit"
-                style={{
-                  '--ru-start': ruStart + 1,
-                  '--ru-height': 1
-                } as React.CSSProperties}
-                onClick={() => onEmptyClick?.(ruNumber)}
-              />
-            );
+            return null; // Space occupied by device
           })}
-        </div>
-
-        {/* Right RU Tick Marks */}
-        <div className="ru-bar-right">
-          {Array.from({ length: totalU }, (_, i) => (
-            <div key={i} className="ru-tick" />
-          ))}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default RackDiagram;

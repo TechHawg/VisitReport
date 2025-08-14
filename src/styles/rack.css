@@ -1,7 +1,18 @@
 /* Rack Diagram Styles - CSS Grid Based Layout */
 
-/* Fixed Layout Tokens - Deterministic Grid */
+/* Root variables */
 :root {
+  --rack-width: 400px;
+  --rack-unit-height: 24px;
+  --rack-border: #cbd5e0;
+  --rack-bg: #ffffff;
+  --rack-text: #374151;
+  --empty-unit-bg: #f9fafb;
+  --empty-unit-border: #e5e7eb;
+  --unit-number-bg: #f3f4f6;
+  --unit-number-text: #6b7280;
+  
+  /* Legacy variables for compatibility */
   /* Two racks side-by-side with zero overlap */
   --rack-page-w: 1020px;    /* Total page width for two racks */
   --rack-w: 492px;          /* Each rack column width */
@@ -12,15 +23,6 @@
   /* Grid contract - deterministic positioning */
   --grid-rows: 45;          /* Exactly 45U per rack */
   --grid-cols: 1fr;         /* Single column for devices */
-  
-  /* Color scheme */
-  --rack-border: #cbd5e0;
-  --rack-bg: #ffffff;
-  --rack-text: #374151;
-  --empty-unit-bg: #f9fafb;
-  --empty-unit-border: #e5e7eb;
-  --unit-number-bg: #f3f4f6;
-  --unit-number-text: #6b7280;
 }
 
 /* Dark mode variables */
@@ -103,14 +105,27 @@
   color: var(--rack-text);
 }
 
-/* Single Rack Container */
+/* Container Styles */
 .rack-container {
-  width: var(--rack-w);
+  max-width: var(--rack-width);
+  margin: 0 auto;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--rack-text);
   background: var(--rack-bg);
   border: 1px solid var(--rack-border);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.rack-container.side-by-side {
+  max-width: calc(var(--rack-width) * 2 + 2rem);
+  display: flex;
+  gap: 1rem;
+}
+
+.rack-container.side-by-side > .rack {
+  flex: 1;
 }
 
 /* Grid-based rack layout with fixed positioning */
@@ -218,40 +233,50 @@
   white-space: nowrap;
 }
 
-/* Main Rack Grid - Fixed 45U Layout */
+/* Main Rack Grid - Updated CSS Grid Layout */
 .rack {
-  grid-column: 2;
   display: grid;
-  grid-template-columns: 32px 1fr; /* unit numbers + rack content */
-  width: 100%;
-  background: repeating-linear-gradient(
-    to bottom,
-    #f5f7fb 0,
-    #f5f7fb var(--ruH),
-    #eef2f7 var(--ruH),
-    #eef2f7 calc(var(--ruH) + 1px)
-  );
+  grid-template-columns: 2.5rem 1fr;
+  min-height: calc(45 * var(--ruH, 24px));
+  position: relative;
+  background: var(--rack-bg);
 }
 
 /* Unit Numbers Column */
 .unit-numbers {
   display: grid;
-  align-items: center;
-  justify-items: end;
-  padding-right: 4px;
+  grid-template-rows: inherit;
+  background: var(--unit-number-bg);
+  border-right: 2px solid var(--rack-border);
 }
 
 .unit-number {
-  font-size: 10px;
-  color: var(--unit-number-text);
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
   font-weight: 500;
+  color: var(--unit-number-text);
+  border-bottom: 1px solid var(--empty-unit-border);
+  min-height: var(--ruH, 24px);
 }
 
-/* Rack Content Column */
+.unit-number:last-child {
+  border-bottom: none;
+}
+
+/* Rack Content Grid */
 .rack-content {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-rows: inherit;
+  position: relative;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--ruH, 24px) - 1px),
+    var(--empty-unit-border) calc(var(--ruH, 24px) - 1px),
+    var(--empty-unit-border) var(--ruH, 24px)
+  );
 }
 
 /* RU Number Bars - Grid Positioned */
@@ -289,13 +314,14 @@
 
 /* Device positioning using CSS Grid */
 
-/* Empty Units - Grid Positioned */
+/* Empty Units */
 .empty-unit {
+  min-height: var(--ruH, 24px);
   background: var(--empty-unit-bg);
   border: 1px dashed var(--empty-unit-border);
+  margin: 1px;
   border-radius: 2px;
   transition: all 0.2s ease;
-  margin: 1px;
 }
 
 .empty-unit:hover {
@@ -304,23 +330,22 @@
   cursor: pointer;
 }
 
-/* Device Blocks - Grid Positioned with Deterministic Layout */
+/* Device Blocks */
 .device {
-  grid-row: var(--ru-start) / span var(--ru-height);
   display: flex;
   align-items: center;
-  border: 1px solid #6b7280;
-  border-radius: 2px;
-  padding: 2px 6px;
-  font-size: 11px;
-  line-height: 1.2;
-  word-break: break-words;
+  min-height: calc(var(--u, 1) * var(--ruH, 24px));
+  background: var(--bg, #e5e7eb);
+  color: var(--fg, #111827);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  margin: 1px;
+  padding: 0.5rem;
   cursor: pointer;
   position: relative;
   overflow: hidden;
   transition: all 0.2s ease;
-  margin: 1px;
-  min-height: calc(var(--ru-height) * var(--ruH) - 2px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .device:hover {
